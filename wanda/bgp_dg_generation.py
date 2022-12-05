@@ -81,9 +81,18 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connection, as_list):
 
             bfd_infos = get_bgp_infos_from_tags("IX", ix['id'], ix['tags'])
 
-            bdg = BGPDeviceGroup(group_name, asn, ip_version, max_prefixes,
-                                 authentication_key, ix['import_routing_policies'], ix['export_routing_policies'],
-                                 policy_type, bfd_infos, ix["is_route_server"])
+            bdg = BGPDeviceGroup(
+                name=group_name,
+                asn=asn,
+                ip_version=ip_version,
+                max_prefixes=max_prefixes,
+                policy_type=policy_type,
+                import_routing_policies=ix['import_routing_policies'],
+                export_routing_policies=ix['export_routing_policies'],
+                authentication_key=authentication_key,
+                bfd_infos=bfd_infos,
+                is_route_server=ix['is_route_server'],
+            )
 
             bdg.append_ip(peer_ip)
             bgp_device_groups.append(bdg)
@@ -161,9 +170,19 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router):
             bfd_infos = get_bgp_infos_from_tags("DP", dp['id'], dp['tags'])
 
             group_name = str.join("_", [prefix, as_name, ip_suffix])
-            bdg = BGPDeviceGroup(group_name, asn, ip_version, max_prefixes,
-                                 authentication_key, dp['import_routing_policies'], dp['export_routing_policies'],
-                                 policy_type, bfd_infos, False)
+            bdg = BGPDeviceGroup(
+                name=group_name,
+                asn=asn,
+                ip_version=ip_version,
+                max_prefixes=max_prefixes,
+                authentication_key=authentication_key,
+                policy_type=policy_type,
+                import_routing_policies=dp['import_routing_policies'],
+                export_routing_policies=dp['export_routing_policies'],
+                bfd_infos=bfd_infos,
+                is_route_server=False,
+            )
+
             bdg.append_ip(peer_ip)
             bgp_device_groups.append(bdg)
 
