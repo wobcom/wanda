@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "wanda"
+version = "0.0.1"
+description = "WAN Data Aggregator"
+authors = ["Johann Wagner <johann.wagner@wobcom.de>"]
+
+[tool.poetry.scripts]
+wanda = "wanda:__main__.main"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+enlighten = "~1.10.2"
+requests = "~2.26.0"
+PyYAML = ">5.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.2.0"]
+build-backend = "poetry.core.masonry.api"
