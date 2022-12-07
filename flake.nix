@@ -16,7 +16,10 @@
         (final: prev: {
           # The application
           wanda = prev.poetry2nix.mkPoetryApplication {
-            projectDir = ./.;
+            projectDir = with final.lib; cleanSourceWith {
+              src = ./.;
+              filter = path: type: !(hasSuffix ".nix" path) && baseNameOf path != ".nix";
+            };
           };
         })
       ];
