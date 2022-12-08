@@ -1,157 +1,32 @@
 import pathlib
-import multiprocessing
-import subprocess
-import re
-from multiprocessing import Manager
-from multiprocessing.managers import BaseManager, SyncManager
 from multiprocessing.pool import Pool
 
-from wanda.irrd_client import IRRDClient
+from wanda.as_filter.as_filter import ASFilter
+from wanda.autonomous_system.autonomous_system import AutonomousSystem
 from wanda.logger import Logger
-from wanda.peeringmanager_helpers import get_irr_names
 
 l = Logger("filter_list_generation.py")
 
 
 def process_filter_lists_for_as(arg):
-    [irrd_client, ase, allowed_as, customer_as, filter_lists] = arg
-    asname = ase["name"]
-    asn = ase["asn"]
+    [irrd_client, autonomous_system, customer_as, filter_lists] = arg
+    asn = autonomous_system.asn
 
-    if asn not in allowed_as:
-        l.info(f"Omitting {asname} ({asn}), because transit provider or no active peering. This is probably fine.")
-        return
+    extended_filtering = asn in customer_as
 
-    if asn in allowed_as:
-        file_content = as_path_for_as(irrd_client, ase)
+    ass = ASFilter(irrd_client, autonomous_system, enable_extended_filters=extended_filtering)
+    as_filter_list = ass.get_filter_lists()
 
-        if asn in customer_as:
-            v4_set, v6_set = filter_lists_for_as(irrd_client, ase)
-
-            v4_tmpl = ';\n    '.join(sorted(v4_set))
-            v6_tmpl = ';\n    '.join(sorted(v6_set))
-
-            file_content += f"""
-prefix-list AS{asn}_V4 {{
-    {v4_tmpl}
-}}
-
-prefix-list AS{asn}_V6 {{
-    {v6_tmpl}
-}}
-
-policy-statement POLICY_AS{asn}_V4 {{
-    term FILTER_LISTS {{
-        from {{
-            as-path-group AS{asn};
-            prefix-list-filter AS{asn}_V4 orlonger;
-        }}
-        then next policy;
-    }}
-    then reject;
-}}
-
-policy-statement POLICY_AS{asn}_V6 {{
-    term FILTER_LISTS {{
-        from {{
-            as-path-group AS{asn};
-            prefix-list-filter AS{asn}_V6 orlonger;
-        }}
-        then next policy;
-    }}
-    then reject;
-}}
-                """
-        else:
-            file_content += f"""
-policy-statement POLICY_AS{asn}_V4 {{
-    term IMPORT_AS_PATHS {{
-        from as-path-group AS{asn};
-        then next policy;
-    }}
-    then reject;
-}}
-
-policy-statement POLICY_AS{asn}_V6 {{
-    term IMPORT_AS_PATHS {{
-        from as-path-group AS{asn};
-        then next policy;
-    }}
-    then reject;
-}}
-                """
-
-        filter_lists[asn] = file_content
+    filter_lists[asn] = as_filter_list
 
 
-def as_path_for_as(irrd_client, ase):
-    asn = ase["asn"]
-    irr_as_set = ase["irr_as_set"]
-    irr_names = [f"AS{asn}"]
-
-    if irr_as_set:
-        irr_names = get_irr_names(irr_as_set, asn)
-
-    result_str = irrd_client.generate_input_aspath_access_list(asn, irr_names[0])
-
-    m = re.search(r'.*as-path-group.*{(.|\n)*?}', result_str)
-
-    if m:
-        # Technically, returning m[0] would work, but we do some cleaning for better quality of the generated configuration
-
-        lines = m[0].split("\n")
-        new_lines = list()
-        indent_count = 0
-
-        for line in lines:
-            line_without_prefixed_spaces = line.lstrip()
-
-            if '}' in line_without_prefixed_spaces:
-                indent_count -= 1
-
-            spaces = [" " for _ in range(indent_count * 4)]
-            new_lines.append("".join(spaces) + line_without_prefixed_spaces)
-
-            if '{' in line_without_prefixed_spaces:
-                indent_count += 1
-
-        return "\n".join(new_lines)
-
-    l.warning(f"AS {asn} could not generate as-path access-lists.")
-    l.warning(f"AS {asn} request returned the following result:")
-    l.warning(result_str)
-
-    return ""
-
-
-def filter_lists_for_as(irrd_client, ase):
-    asname = ase["name"]
-    asn = ase["asn"]
-    irr_as_set = ase["irr_as_set"]
-
-    irr_names = [f"AS{asn}"]
-
-    v4_set = set()
-    v6_set = set()
-
-    if irr_as_set:
-        irr_names = get_irr_names(irr_as_set, asn)
-
-    for irr_name in irr_names:
-        result_entries_v4_cleaned, result_entries_v6_cleaned = irrd_client.generate_prefix_lists(irr_name)
-
-        v4_set.update(result_entries_v4_cleaned)
-        v6_set.update(result_entries_v6_cleaned)
-
-    if len(v4_set) == 0 and len(v6_set) == 0:
-        l.error(f"AS {asn} has no v4 filter lists.")
-        raise Exception(
-            f"AS {asn} has no v6 filter lists. Since AS {asn} is our customer, we forbid this for security reasons.")
-
-    return v4_set, v6_set
-
-
-def main_customer_filter_lists(enlighten_manager, sync_manager, peering_manager_instance, irrd_client, hosts=None) -> int:
+def main_customer_filter_lists(
+        enlighten_manager,
+        sync_manager,
+        peering_manager_instance,
+        irrd_client,
+        hosts=None
+) -> int:
     l.hint(f"Fetching ASes, make sure VPN is enabled on your system.")
 
     e_targets = enlighten_manager.counter(total=5, desc='Fetching Data', unit='Targets')
@@ -183,8 +58,9 @@ def main_customer_filter_lists(enlighten_manager, sync_manager, peering_manager_
                 l.warning(f"{host} is not a known host, ignoring...")
 
     router_per_as = {}
-    customer_as = set()
     enabled_asn = set()
+    extended_filtering_as = set()
+
     for dp in dp_list:
         router_hostname = dp['router']['hostname']
 
@@ -192,11 +68,16 @@ def main_customer_filter_lists(enlighten_manager, sync_manager, peering_manager_
             continue
 
         asn = dp['autonomous_system']['asn']
+        asname = dp['autonomous_system']['name']
 
-        enabled_asn.add(asn)
+        # We do not filter any transit provider
+        if dp["relationship"]['slug'] == "transit-provider":
+            l.info(f"Omitting {asname} ({asn}) at {router_hostname}, they are our transit provider. This is probably fine.")
+        else:
+            enabled_asn.add(asn)
 
         if dp['relationship']['slug'] == "customer":
-            customer_as.add(asn)
+            extended_filtering_as.add(asn)
 
         if router_hostname in router_per_as:
             router_per_as[router_hostname].add(asn)
@@ -222,44 +103,32 @@ def main_customer_filter_lists(enlighten_manager, sync_manager, peering_manager_
         is_customer = "customer" in tag_list
 
         if is_customer:
-            customer_as.add(asn)
+            extended_filtering_as.add(asn)
 
         if router_hostname in router_per_as:
             router_per_as[router_hostname].add(asn)
         else:
             router_per_as[router_hostname] = {asn}
 
-    allowed_as = set()
-
-    for dp in dp_list:
-        if dp["relationship"]['slug'] == "transit-provider":
-            continue
-
-        asn = dp['autonomous_system']['asn']
-        allowed_as.add(asn)
-
-    for ixp in ixp_list:
-        asn = ixp['autonomous_system']['asn']
-        allowed_as.add(asn)
-
     filter_lists = sync_manager.dict()
 
-    needed_as = list(
-        filter(
-            lambda ase: ase['asn'] in enabled_asn,
-            as_list
-        )
-    )
+    prepared_asns = [
+        (
+            irrd_client,
+            AutonomousSystem(asn=ase['asn'], name=ase['name'], irr_as_set=ase['irr_as_set']),
+            extended_filtering_as,
+            filter_lists
+        ) for ase in as_list if ase['asn'] in enabled_asn
+    ]
 
-    e_as = enlighten_manager.counter(total=len(needed_as), desc='Generating Filter Lists for ASes', unit='AS')
+    e_as = enlighten_manager.counter(total=len(prepared_asns), desc='Generating Filter Lists for ASes', unit='AS')
+    n_worker = len(prepared_asns)
 
-    n_worker = len(needed_as)
-    pool = Pool(n_worker)
-    for _ in pool.imap_unordered(process_filter_lists_for_as,
-                                 [(irrd_client, ase, allowed_as, customer_as, filter_lists) for ase in needed_as]):
-        e_as.update()
+    with Pool(processes=n_worker) as fetch_pool:
+        for _ in fetch_pool.imap_unordered(process_filter_lists_for_as, prepared_asns):
+            e_as.update()
 
-    e_as.close()
+        e_as.close()
 
     for router_hostname in router_per_as:
         as_list = router_per_as[router_hostname]

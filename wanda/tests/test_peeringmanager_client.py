@@ -2,7 +2,7 @@ import ipaddress
 import pytest
 import os
 
-from ..peeringmanager_client import PeeringManagerClient
+from wanda.peeringmanager_client import PeeringManagerClient
 
 
 class TestPeeringManagerClient:

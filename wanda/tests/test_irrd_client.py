@@ -2,7 +2,7 @@ import ipaddress
 
 import pytest
 
-from ..irrd_client import IRRDClient
+from wanda.irrd_client import IRRDClient
 
 
 class TestIRRDClient:
@@ -41,10 +41,13 @@ class TestIRRDClient:
         ]
     )
     def test_input_as_path_access_list(self, irrd_instance, irr_name, asn):
-
         access_list = irrd_instance.generate_input_aspath_access_list(asn, irr_name)
 
-        assert "policy-options" in access_list
-        assert "replace:" in access_list
-        assert f"as-path-group AS{asn}" in access_list
+        # We need to strip some things out of the response.
+        assert "policy-options" not in access_list
+        assert "replace:" not in access_list
+
+        assert access_list.startswith(f"as-path-group AS{asn} {{\n")
+        assert access_list.endswith(f"\n}}")
+
         assert f"as-path a0 \"^{asn}({asn})*$\";" in access_list

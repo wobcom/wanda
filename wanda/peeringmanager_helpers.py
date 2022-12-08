@@ -38,19 +38,3 @@ def get_config_name_from_as(display_name):
     return base_name
 
 
-def get_irr_names(irr_as_set, asn):
-
-    set_elements = irr_as_set.upper().split(" ")
-    return_elements = []
-
-    for set_element in set_elements:
-        match_result = re.findall(r'(AS[^\s,]*)', set_element)
-
-        if len(match_result) != 0:
-            return_elements.append(match_result[0])
-
-    # Fall back to ASN if no AS-Set is found
-    if not return_elements:
-        return_elements.append("AS"+str(asn))
-
-    return return_elements

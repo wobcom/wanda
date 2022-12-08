@@ -4,7 +4,7 @@ from ipaddress import IPv4Network, IPv6Network
 
 import pytest
 
-from ..bgp_device_group import BGPDeviceGroup
+from wanda.bgp_device_group.bgp_device_group import BGPDeviceGroup
 
 
 def get_bgp_device_group_4(**kwargs):

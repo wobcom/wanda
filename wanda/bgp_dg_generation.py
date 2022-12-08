@@ -6,7 +6,7 @@ from multiprocessing import Pool
 
 import yaml
 
-from wanda.bgp_device_group import BGPDeviceGroup
+from wanda.bgp_device_group.bgp_device_group import BGPDeviceGroup
 from wanda.logger import Logger
 from wanda.peeringmanager_helpers import get_config_name_from_as, get_bgp_infos_from_tags
 
