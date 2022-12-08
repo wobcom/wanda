@@ -2,7 +2,7 @@
   description = "wanda - WAN Data Aggregator";
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/22.11";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-22.11";
   inputs.poetry2nix = {
     url = "github:nix-community/poetry2nix";
     inputs.nixpkgs.follows = "nixpkgs";
@@ -21,6 +21,8 @@
               filter = path: type: !(hasSuffix ".nix" path) && baseNameOf path != ".nix";
             };
           };
+
+          wandaNixosTest = final.nixosTest (import ./nixos-test.nix);
         })
       ];
     } // (flake-utils.lib.eachDefaultSystem (system:
@@ -32,7 +34,7 @@
       in
       {
         packages = {
-          wanda = pkgs.wanda;
+          inherit (pkgs) wanda wandaNixosTest;
           default = pkgs.wanda;
         };
 
