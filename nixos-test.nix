@@ -22,8 +22,12 @@
     machine.wait_for_unit("peering-manager.target")
     machine.wait_until_succeeds("journalctl --since -1m --unit peering-manager --grep Listening")
 
-    machine.succeed("peering-manager-manage loaddata ${./testdata.json}")
+    machine.succeed("peering-manager-manage createsuperuser --no-input --username admin --email admin@example.com")
 
-    machine.succeed("PEERINGMANAGER_API_TOKEN=123 PEERINGMANAGER_URL=${peeringmanagerUrl} wanda" % (api_token))
+    api_token=machine.succeed(
+        "peering-manager-manage shell -c \"from users.models import Token; t = Token.objects.create(user_id=1); print(t.key)\""
+    ).strip()
+
+    machine.succeed("PEERINGMANAGER_API_TOKEN=%s PEERINGMANAGER_URL=${peeringmanagerUrl} wanda" % (api_token))
   '';
 }
