@@ -2,7 +2,7 @@ import ipaddress
 
 import pytest
 
-from irrd_client import IRRDClient
+from ..irrd_client import IRRDClient
 
 
 class TestIRRDClient:
