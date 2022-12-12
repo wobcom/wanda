@@ -5,6 +5,7 @@ import os
 from wanda.peeringmanager_client import PeeringManagerClient
 
 
+@pytest.mark.integration
 class TestPeeringManagerClient:
 
     @pytest.fixture

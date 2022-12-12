@@ -5,6 +5,7 @@ import pytest
 from wanda.irrd_client import IRRDClient
 
 
+@pytest.mark.integration
 class TestIRRDClient:
 
     @pytest.fixture

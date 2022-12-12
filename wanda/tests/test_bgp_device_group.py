@@ -45,6 +45,7 @@ def get_bgp_device_group_6(**kwargs):
     return group
 
 
+@pytest.mark.unit
 class TestBGPDeviceGroup:
 
     @pytest.mark.parametrize(
