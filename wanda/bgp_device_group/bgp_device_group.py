@@ -5,19 +5,20 @@ from .junos_secret import juniper_encrypt
 
 class BGPDeviceGroup:
 
-    def __init__(self, name, asn, ip_version, max_prefixes, authentication_key, import_routing_policies, export_routing_policies, policy_type, bfd_infos, is_route_server):
+    def __init__(self, name, asn, ip_version, max_prefixes, policy_type=None, authentication_key=None,
+                 import_routing_policies=None, export_routing_policies=None, bfd_infos=None, is_route_server=False):
+
         self.name = name
         self.asn = asn
         self.ip_version = ip_version
         self.max_prefixes = max_prefixes
         self.authentication_key = authentication_key
-        self.import_routing_policies = import_routing_policies
-        self.export_routing_policies = export_routing_policies
+        self.import_routing_policies = import_routing_policies or []
+        self.export_routing_policies = export_routing_policies or []
         self.policy_type = policy_type
         self.bfd_infos = bfd_infos
         self.is_route_server = is_route_server
         self.ips = []
-
 
     def append_ip(self, ip_address):
 

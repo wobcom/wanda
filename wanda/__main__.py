@@ -10,7 +10,7 @@ from wanda.filter_list_generation import main_customer_filter_lists
 from wanda.irrd_client import IRRDClient
 from wanda.peeringmanager_client import PeeringManagerClient
 
-from .logger import Logger
+from wanda.logger import Logger
 
 l = Logger("main.py")
 

@@ -4,6 +4,13 @@ import requests
 class PeeringManagerClient:
 
     def __init__(self, peering_manager_url, peering_manager_api_token):
+
+        if not peering_manager_url:
+            raise Exception("peering_manager_url is not defined.")
+
+        if not peering_manager_api_token:
+            raise Exception("peering_manager_api_token is not defined.")
+
         self.data = []
         self.peeringManagerAPIUrl = peering_manager_url
         self.peeringManagerAPIToken = peering_manager_api_token
