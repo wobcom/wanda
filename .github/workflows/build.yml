@@ -25,6 +25,7 @@ jobs:
       with:
         extra_nix_config: |
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+          system-features = nixos-test benchmark big-parallel kvm
     - uses: cachix/cachix-action@v12
       with:
         name: wobcom-public
