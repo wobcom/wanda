@@ -22,6 +22,11 @@
             };
           };
 
+          # Used to run tests for wanda
+          wandaTestEnv = prev.poetry2nix.mkPoetryEnv {
+              projectDir = ./.;
+          };
+
           wandaNixosTest = final.nixosTest (import ./nixos-test.nix);
         })
       ];

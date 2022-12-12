@@ -12,7 +12,7 @@
         abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
       '';
     };
-    environment.systemPackages = with pkgs; [ wanda ];
+    environment.systemPackages = with pkgs; [ wanda wandaTestEnv bgpq4 ];
   };
 
   testScript = { nodes }: let
@@ -25,9 +25,10 @@
     machine.succeed("peering-manager-manage createsuperuser --no-input --username admin --email admin@example.com")
 
     api_token=machine.succeed(
-        "peering-manager-manage shell -c \"from users.models import Token; t = Token.objects.create(user_id=1); print(t.key)\""
+        "peering-manager-manage shell -c \"from users.models import Token; from users.models import User; u=User.objects.get(email='admin@example.com'); t = Token.objects.create(user=u); print(t.key)\""
     ).strip()
 
-    machine.succeed("PEERINGMANAGER_API_TOKEN=%s PEERINGMANAGER_URL=${peeringmanagerUrl} wanda" % (api_token))
+    machine.succeed("PEERINGMANAGER_API_TOKEN=%s PEERINGMANAGER_URL=${peeringmanagerUrl} pytest ${pkgs.wanda.src}" % (api_token))
+    machine.shutdown()
   '';
 }
