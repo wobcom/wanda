@@ -10,12 +10,15 @@ class IRRDClient:
         self.irrdURL = irrd_url
         self.host_params = ['-h', irrd_url]
 
-    def generate_input_aspath_access_list(self, asn, irr_name):
-        # bgpq4 AS-TELIANET-V6 -f 1299 -W 100 -J -l AS1299
+    def call_bgpq4_aspath_access_list(self, asn, irr_name):
         command_array = ["bgpq4", *self.host_params, "-f", str(asn), "-W 100", "-J", "-l", f"AS{asn}", irr_name]
         result = subprocess.run(command_array, capture_output=True)
         result_str = result.stdout.decode("utf-8")
+        return result_str
 
+    def generate_input_aspath_access_list(self, asn, irr_name):
+        # bgpq4 AS-TELIANET-V6 -f 1299 -W 100 -J -l AS1299
+        result_str = self.call_bgpq4_aspath_access_list(asn, irr_name)
         m = re.search(r'.*as-path-group.*{(.|\n)*?}', result_str)
 
         if m:
@@ -41,12 +44,20 @@ class IRRDClient:
 
         return None
 
-    def generate_prefix_lists(self, irr_name):
-        result_v4 = subprocess.run(["bgpq4", *self.host_params, "-4", "-F", "%n/%l\n", irr_name], capture_output=True)
-        result_v6 = subprocess.run(["bgpq4", *self.host_params, "-6", "-F", "%n/%l\n", irr_name], capture_output=True)
+    def call_bgpq4_prefix_lists(self, irr_name, ip_version):
+        result = subprocess.run(
+            ["bgpq4", *self.host_params, f"-{ip_version}", "-F", "%n/%l\n", irr_name],
+            capture_output=True
+        )
+        result_str = result.stdout.decode("utf-8")
+        return result_str
 
-        result_entries_v4 = result_v4.stdout.decode("utf-8").splitlines()
-        result_entries_v6 = result_v6.stdout.decode("utf-8").splitlines()
+    def generate_prefix_lists(self, irr_name):
+        result_v4 = self.call_bgpq4_prefix_lists(irr_name, 4)
+        result_v6 = self.call_bgpq4_prefix_lists(irr_name, 6)
+
+        result_entries_v4 = result_v4.splitlines()
+        result_entries_v6 = result_v6.splitlines()
 
         # Stripping empty lines
         result_entries_v4_cleaned = [x for x in result_entries_v4 if x]
