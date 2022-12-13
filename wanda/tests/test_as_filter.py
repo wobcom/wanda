@@ -55,13 +55,15 @@ prefix-list AS9136_V6 {
 class TestASFilter:
 
     @pytest.mark.parametrize(
-        "asfilter,enable_extended_filters",
+        "enable_extended_filters",
         [
-            (get_asfilter(enable_extended_filters=True), True),
-            (get_asfilter(enable_extended_filters=False), False)
+            (True),
+            (False)
         ]
     )
-    def test_prefix_lists(self, mocker, asfilter, enable_extended_filters):
+    def test_prefix_lists(self, mocker, enable_extended_filters):
+        asfilter = get_asfilter()
+
         mocker.patch(
             'wanda.irrd_client.IRRDClient.generate_prefix_lists',
             return_value=(WOBCOM_PREFIX_LIST_MOCK_V4, WOBCOM_PREFIX_LIST_MOCK_V6)
@@ -72,7 +74,7 @@ class TestASFilter:
             return_value=AS_PATH_MOCK
         )
 
-        file_content = asfilter.get_filter_lists()
+        file_content = asfilter.get_filter_lists(enable_extended_filters)
 
         assert len(file_content) > 0
 
