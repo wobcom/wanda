@@ -11,11 +11,12 @@ l = Logger("filter_list_generation.py")
 def process_filter_lists_for_as(arg):
     [irrd_client, autonomous_system, customer_as, filter_lists] = arg
     asn = autonomous_system.asn
+    is_customer = asn in customer_as
 
-    extended_filtering = asn in customer_as
-
-    ass = ASFilter(irrd_client, autonomous_system, enable_extended_filters=extended_filtering)
-    as_filter_list = ass.get_filter_lists()
+    ass = ASFilter(irrd_client, autonomous_system, is_customer=is_customer)
+    v4_set, v6_set = ass.prefix_lists
+    extended_filtering = is_customer or len(v4_set) + len(v6_set) < 5000
+    as_filter_list = ass.get_filter_lists(enable_extended_filters=extended_filtering)
 
     filter_lists[asn] = as_filter_list
 
