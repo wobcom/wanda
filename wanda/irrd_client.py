@@ -12,7 +12,7 @@ class IRRDClient:
 
     def call_bgpq4_aspath_access_list(self, asn, irr_name):
         command_array = ["bgpq4", *self.host_params, "-f", str(asn), "-W 100", "-J", "-l", f"AS{asn}", irr_name]
-        result = subprocess.run(command_array, capture_output=True)
+        result = subprocess.run(command_array, capture_output=True, check=True)
         result_str = result.stdout.decode("utf-8")
         return result_str
 
@@ -47,7 +47,8 @@ class IRRDClient:
     def call_bgpq4_prefix_lists(self, irr_name, ip_version):
         result = subprocess.run(
             ["bgpq4", *self.host_params, f"-{ip_version}", "-F", "%n/%l\n", irr_name],
-            capture_output=True
+            capture_output=True,
+            check=True
         )
         result_str = result.stdout.decode("utf-8")
         return result_str

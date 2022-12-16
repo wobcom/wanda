@@ -1,4 +1,5 @@
 import ipaddress
+from subprocess import CalledProcessError
 
 import pytest
 
@@ -104,3 +105,7 @@ class TestIRRDClient:
         assert access_list.endswith(f"\n}}")
 
         assert f"as-path a0 \"^{asn}({asn})*$\";" in access_list
+
+    def test_invalid_bgpq4_prefix_lists(self, irrd_instance):
+        with pytest.raises(CalledProcessError):
+            irrd_instance.call_bgpq4_prefix_lists("AS-WOBCOM", 5)
