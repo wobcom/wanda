@@ -10,10 +10,9 @@ l = Logger("as_filter.py")
 
 class ASFilter:
 
-    def __init__(self, irrd_client: IRRDClient, autos: AutonomousSystem, is_customer=True):
+    def __init__(self, irrd_client: IRRDClient, autos: AutonomousSystem):
         self.irrd_client = irrd_client
         self.autos = autos
-        self.is_customer = is_customer
 
     @cached_property
     def prefix_lists(self):
@@ -29,10 +28,10 @@ class ASFilter:
             v4_set.update(result_entries_v4_cleaned)
             v6_set.update(result_entries_v6_cleaned)
 
-        if len(v4_set) == 0 and len(v6_set) == 0 and self.is_customer:
-            l.error(f"{self.autos} has no v4 filter lists.")
+        if len(v4_set) == 0 and len(v6_set) == 0:
+            l.error(f"{self.autos} has no filter lists")
             raise Exception(
-                f"{self.autos} has no v6 filter lists. Since AS is our customer, we forbid this for security reasons.")
+                f"{self.autos} has no filter lists")
 
         return v4_set, v6_set
 
