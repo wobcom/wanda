@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "wanda"
-version = "0.3.2"
+version = "0.3.3"
 description = "WAN Data Aggregator"
-authors = ["Johann Wagner <johann.wagner@wobcom.de>"]
+authors = ["Johann Wagner <johann.wagner@wobcom.de>", "Yureka <yuka@yuka.dev>"]
 
 [tool.poetry.scripts]
 wanda = "wanda:__main__.main"
