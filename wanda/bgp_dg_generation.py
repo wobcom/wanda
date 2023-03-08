@@ -23,79 +23,83 @@ def check_for_consistency(bgp_device_groups, filter_groups_file_content):
     return True
 
 
-def build_bgp_device_groups_for_ix_peerings(ix_peerings, connection, as_list):
+def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list):
     bgp_device_groups = []
-    for ix in ix_peerings:
+    for connection in connections:
+      for ix in ix_peerings:
 
-        if ix['status']['value'] != 'enabled':
-            l.info(f'Skipping Internet Exchange Peering Session with id={ix["id"]}, because is not enabled.')
-            continue
+          if ix['status']['value'] != 'enabled':
+              l.info(f'Skipping Internet Exchange Peering Session with id={ix["id"]}, because is not enabled.')
+              continue
 
-        if ix['ixp_connection']['id'] is not connection['id']:
-            continue
+          if ix['ixp_connection']['id'] is not connection['id']:
+              continue
 
-        asn = ix['autonomous_system']['asn']
-        peer_ip = ix["ip_address"]
-        authentication_key = None
-        if "password" in ix:
-            authentication_key = ix["password"]
+          if connection['id'] == 22:
+              l.info(f'id 22 !!! {ix}')
 
-        parsed_peer_ipnetwork = ipaddress.ip_network(peer_ip, strict=False)
-        ip_version = parsed_peer_ipnetwork.version
+          asn = ix['autonomous_system']['asn']
+          peer_ip = ix["ip_address"]
+          authentication_key = None
+          if "password" in ix:
+              authentication_key = ix["password"]
 
-        max_prefixes = 0
-        if ip_version == 4:
-            max_prefixes = ix['autonomous_system']['ipv4_max_prefixes']
-        elif ip_version == 6:
-            max_prefixes = ix['autonomous_system']['ipv6_max_prefixes']
+          parsed_peer_ipnetwork = ipaddress.ip_network(peer_ip, strict=False)
+          ip_version = parsed_peer_ipnetwork.version
 
-        existing_bgp_device_groups = list(
-            filter(lambda x: x.asn == asn and x.ip_version == ip_version, bgp_device_groups))
+          max_prefixes = 0
+          if ip_version == 4:
+              max_prefixes = ix['autonomous_system']['ipv4_max_prefixes']
+          elif ip_version == 6:
+              max_prefixes = ix['autonomous_system']['ipv6_max_prefixes']
 
-        if len(existing_bgp_device_groups) > 1:
-            raise Exception("Invalid BGP Device Groupings")
+          existing_bgp_device_groups = list(
+              filter(lambda x: x.asn == asn and x.ip_version == ip_version, bgp_device_groups))
 
-        existing_bgp_device_group = next(iter(existing_bgp_device_groups), None)
+          if len(existing_bgp_device_groups) > 1:
+              raise Exception("Invalid BGP Device Groupings")
 
-        if existing_bgp_device_group:
-            existing_bgp_device_group.append_ip(peer_ip)
-        else:
+          existing_bgp_device_group = next(iter(existing_bgp_device_groups), None)
 
-            ix_slug = str.upper(connection['internet_exchange_point']['slug'])
-            as_name = get_config_name_from_as(ix['autonomous_system']['name'])
+          if existing_bgp_device_group:
+              existing_bgp_device_group.append_ip(peer_ip)
+          else:
 
-            ip_suffix = ""
-            if ip_version == 4:
-                ip_suffix = "V4"
-            elif ip_version == 6:
-                ip_suffix = "V6"
+              ix_slug = str.upper(connection['internet_exchange_point']['slug'])
+              as_name = get_config_name_from_as(ix['autonomous_system']['name'])
 
-            group_name = str.join("_", ["PEERING", ix_slug, as_name, ip_suffix])
+              ip_suffix = ""
+              if ip_version == 4:
+                  ip_suffix = "V4"
+              elif ip_version == 6:
+                  ip_suffix = "V6"
 
-            tag_list = map(lambda x: x['name'], ix['tags'])
-            is_customer = "customer" in tag_list
+              group_name = str.join("_", ["PEERING", ix_slug, as_name, ip_suffix])
 
-            policy_type = "peering"
-            if is_customer:
-                policy_type = "customer"
+              tag_list = map(lambda x: x['name'], ix['tags'])
+              is_customer = "customer" in tag_list
 
-            bfd_infos = get_bgp_infos_from_tags("IX", ix['id'], ix['tags'])
+              policy_type = "peering"
+              if is_customer:
+                  policy_type = "customer"
 
-            bdg = BGPDeviceGroup(
-                name=group_name,
-                asn=asn,
-                ip_version=ip_version,
-                max_prefixes=max_prefixes,
-                policy_type=policy_type,
-                import_routing_policies=ix['import_routing_policies'],
-                export_routing_policies=ix['export_routing_policies'],
-                authentication_key=authentication_key,
-                bfd_infos=bfd_infos,
-                is_route_server=ix['is_route_server'],
-            )
+              bfd_infos = get_bgp_infos_from_tags("IX", ix['id'], ix['tags'])
 
-            bdg.append_ip(peer_ip)
-            bgp_device_groups.append(bdg)
+              bdg = BGPDeviceGroup(
+                  name=group_name,
+                  asn=asn,
+                  ip_version=ip_version,
+                  max_prefixes=max_prefixes,
+                  policy_type=policy_type,
+                  import_routing_policies=ix['import_routing_policies'],
+                  export_routing_policies=ix['export_routing_policies'],
+                  authentication_key=authentication_key,
+                  bfd_infos=bfd_infos,
+                  is_route_server=ix['is_route_server'],
+              )
+
+              bdg.append_ip(peer_ip)
+              bgp_device_groups.append(bdg)
 
     return bgp_device_groups
 
@@ -243,11 +247,7 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, hosts=No
 
         router_connections = list(filter(lambda c: c['router'] and c['router']['id'] == router['id'], connections))
 
-        bgp_device_groups = []
-
-        for router_connection in router_connections:
-            x = build_bgp_device_groups_for_ix_peerings(ix_peerings, router_connection, as_list)
-            bgp_device_groups.extend(x)
+        bgp_device_groups = build_bgp_device_groups_for_ix_peerings(ix_peerings, router_connections, as_list)
 
         y = build_bgp_device_groups_for_direct_peerings(direct_peerings, router)
         bgp_device_groups.extend(y)
