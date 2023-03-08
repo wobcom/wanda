@@ -54,7 +54,7 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list):
               max_prefixes = ix['autonomous_system']['ipv6_max_prefixes']
 
           existing_bgp_device_groups = list(
-              filter(lambda x: x.asn == asn and x.ip_version == ip_version, bgp_device_groups))
+              filter(lambda x: x.asn == asn and x.ip_version == ip_version and x.ix_id == connection['internet_exchange_point']['id'], bgp_device_groups))
 
           if len(existing_bgp_device_groups) > 1:
               raise Exception("Invalid BGP Device Groupings")
@@ -96,6 +96,7 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list):
                   authentication_key=authentication_key,
                   bfd_infos=bfd_infos,
                   is_route_server=ix['is_route_server'],
+                  ix_id=connection['internet_exchange_point']['id'],
               )
 
               bdg.append_ip(peer_ip)
