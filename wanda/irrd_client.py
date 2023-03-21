@@ -1,20 +1,35 @@
 import subprocess
 import re
+from subprocess import CalledProcessError
+
 import requests
 
-
 class IRRDClient:
+
+    POSSIBLE_RETRIES = 3
 
     def __init__(self, irrd_url):
         self.data = []
         self.irrdURL = irrd_url
         self.host_params = ['-h', irrd_url]
 
+    def call_subprocess(self, command_array):
+
+        current_try = 1
+
+        while current_try <= self.POSSIBLE_RETRIES:
+            result = subprocess.run(command_array, capture_output=True)
+            if result.returncode == 0:
+                result_str = result.stdout.decode("utf-8")
+                return result_str
+
+            current_try += 1
+
+        raise Exception("bgpq4 could not be called successfully, this may be an programming error or a bad internet connection.")
+
     def call_bgpq4_aspath_access_list(self, asn, irr_name):
         command_array = ["bgpq4", *self.host_params, "-f", str(asn), "-W 100", "-J", "-l", f"AS{asn}", irr_name]
-        result = subprocess.run(command_array, capture_output=True, check=True)
-        result_str = result.stdout.decode("utf-8")
-        return result_str
+        return self.call_subprocess(command_array)
 
     def generate_input_aspath_access_list(self, asn, irr_name):
         # bgpq4 AS-TELIANET-V6 -f 1299 -W 100 -J -l AS1299
@@ -45,13 +60,8 @@ class IRRDClient:
         return None
 
     def call_bgpq4_prefix_lists(self, irr_name, ip_version):
-        result = subprocess.run(
-            ["bgpq4", *self.host_params, f"-{ip_version}", "-F", "%n/%l\n", irr_name],
-            capture_output=True,
-            check=True
-        )
-        result_str = result.stdout.decode("utf-8")
-        return result_str
+        command_array = ["bgpq4", *self.host_params, f"-{ip_version}", "-F", "%n/%l\n", irr_name]
+        return self.call_subprocess(command_array)
 
     def generate_prefix_lists(self, irr_name):
         result_v4 = self.call_bgpq4_prefix_lists(irr_name, 4)

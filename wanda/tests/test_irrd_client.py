@@ -107,5 +107,6 @@ class TestIRRDClient:
         assert f"as-path a0 \"^{asn}({asn})*$\";" in access_list
 
     def test_invalid_bgpq4_prefix_lists(self, irrd_instance):
-        with pytest.raises(CalledProcessError):
+        with pytest.raises(Exception):
             irrd_instance.call_bgpq4_prefix_lists("AS-WOBCOM", 5)
+
