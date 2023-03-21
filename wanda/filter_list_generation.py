@@ -1,4 +1,5 @@
 import pathlib
+import platform
 from multiprocessing.pool import Pool
 
 from wanda.as_filter.as_filter import ASFilter
@@ -123,7 +124,17 @@ def main_customer_filter_lists(
     ]
 
     e_as = enlighten_manager.counter(total=len(prepared_asns), desc='Generating Filter Lists for ASes', unit='AS')
-    n_worker = len(prepared_asns)
+
+    # We want to use as many processes as possible for speeds.
+    # Currently, macOS does funky things if you spawn too many threads, therefore we limit those on 8 threads.
+    # Linux's users can use the maximum amount of threads.
+    # We do not have any Windows user, but we may also want to limit them.
+    system_platform = platform.system()
+    if system_platform == "Linux":
+        n_worker = len(prepared_asns)
+    else:
+        l.warning("Running with a limited amount of threads due to OS limitations...")
+        n_worker = 8
 
     with Pool(processes=n_worker) as fetch_pool:
         for _ in fetch_pool.imap_unordered(process_filter_lists_for_as, prepared_asns):
