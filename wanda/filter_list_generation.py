@@ -123,7 +123,9 @@ def main_customer_filter_lists(
     ]
 
     e_as = enlighten_manager.counter(total=len(prepared_asns), desc='Generating Filter Lists for ASes', unit='AS')
-    n_worker = len(prepared_asns)
+    # n_worker = len(prepared_asns)
+
+    n_worker = 8
 
     with Pool(processes=n_worker) as fetch_pool:
         for _ in fetch_pool.imap_unordered(process_filter_lists_for_as, prepared_asns):
