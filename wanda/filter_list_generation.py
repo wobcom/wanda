@@ -27,7 +27,8 @@ def main_customer_filter_lists(
         sync_manager,
         peering_manager_instance,
         irrd_client,
-        hosts=None
+        hosts=None,
+        max_threads=-1,
 ) -> int:
     l.hint(f"Fetching ASes, make sure VPN is enabled on your system.")
 
@@ -130,7 +131,10 @@ def main_customer_filter_lists(
     # Linux's users can use the maximum amount of threads.
     # We do not have any Windows user, but we may also want to limit them.
     system_platform = platform.system()
-    if system_platform == "Linux":
+    if max_threads != -1:
+        n_worker = max_threads
+        l.warning(f"Running with a limited amount of threads, n_worker={max_threads}")
+    elif system_platform == "Linux":
         n_worker = len(prepared_asns)
     else:
         l.warning("Running with a limited amount of threads due to OS limitations...")

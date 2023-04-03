@@ -20,6 +20,7 @@ def main() -> int:
         description='Automagically generate filter lists and BGP sessions for WAN-Core network')
     parser.add_argument('--fast', action='store_true', help='Skips filter list generation')
     parser.add_argument('--limit', default=[], metavar="STRING", action="append", help='List of hosts to generate configurations')
+    parser.add_argument('--threads', default=-1, type=int, help='Limits the amount of used threads')
 
     args = parser.parse_args()
 
@@ -51,7 +52,7 @@ def main() -> int:
     peering_manager_instance = manager.PeeringManagerClient(peeringmanager_url, peeringmanager_api_token)
 
     if mode == "full":
-        return_code1 = main_customer_filter_lists(enlighten_manager, manager, peering_manager_instance, irrd_client, hosts=hosts)
+        return_code1 = main_customer_filter_lists(enlighten_manager, manager, peering_manager_instance, irrd_client, hosts=hosts, max_threads=args.threads)
     else:
         return_code1 = 0
     return_code2 = main_bgp(enlighten_manager, manager, peering_manager_instance, hosts=hosts)
