@@ -1,8 +1,10 @@
 import subprocess
 import re
-from subprocess import CalledProcessError
 
-import requests
+from wanda.logger import Logger
+
+l = Logger("irrd_client.py")
+
 
 class IRRDClient:
 
@@ -25,6 +27,7 @@ class IRRDClient:
 
             current_try += 1
 
+        l.error(f"Failed to execute command: {' '.join(command_array)}")
         raise Exception("bgpq4 could not be called successfully, this may be an programming error or a bad internet connection.")
 
     def call_bgpq4_aspath_access_list(self, asn, irr_name):
