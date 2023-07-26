@@ -103,6 +103,7 @@ class BGPDeviceGroup:
             "name": self.name,
             "peer_as": self.asn,
             "type": "external",
+            "remove_private": True,
             "export": export_policies,
             "import": import_policies,
             "family": {},
