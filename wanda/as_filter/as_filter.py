@@ -30,9 +30,8 @@ class ASFilter:
             v6_set.update(result_entries_v6_cleaned)
 
         if len(v4_set) == 0 and len(v6_set) == 0 and self.is_customer:
-            l.error(f"{self.autos} has no v4 filter lists.")
             raise Exception(
-                f"{self.autos} has no v6 filter lists. Since AS is our customer, we forbid this for security reasons.")
+                f"{self.autos} has neither IPv4, nor IPv6 filter lists. Since AS is our customer, we forbid this for security reasons.")
 
         return v4_set, v6_set
 
