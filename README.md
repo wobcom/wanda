@@ -3,7 +3,7 @@
 ![a photo montage of the fairy wanda sitting on a large router](https://user-images.githubusercontent.com/11413574/206003257-b5eea095-50a6-4844-8c06-b2641805f7bc.png)
 
 Wanda is the fairly odd fairy that configures BGP sessions and generates filters.
-The output is quiet specific to our setup and automation stack, so consider it not a solution, more an inspiration.
+The output is quite specific to our setup and automation stack, so consider it not a solution, more an inspiration.
 
 
 ## Architecture
