@@ -2,7 +2,7 @@
   description = "wanda - WAN Data Aggregator";
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-22.11";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
   inputs.poetry2nix = {
     url = "github:nix-community/poetry2nix";
     inputs.nixpkgs.follows = "nixpkgs";
@@ -12,7 +12,7 @@
     {
       # Nixpkgs overlay providing the application
       overlay = nixpkgs.lib.composeManyExtensions [
-        poetry2nix.overlay
+        poetry2nix.overlays.default
         (final: prev: {
           # The application
           wanda = prev.poetry2nix.mkPoetryApplication {
