@@ -99,8 +99,16 @@ class BGPDeviceGroup:
         export_policies = self.get_export_policies()
         import_policies = self.get_import_policies()
 
+        # name contains an ip version suffix every time.
+
+        shorted_name = self.name
+        if len(self.name) > 32:
+            as_len = len(str(self.asn))
+            cap = 29 - as_len - 1
+            shorted_name = f'{self.name[0:-3][:cap]}_{str(self.asn)}{self.name[-3:]}'
+
         junos_elem = {
-            "name": self.name,
+            "name": shorted_name,
             "peer_as": self.asn,
             "type": "external",
             "remove_private": True,
