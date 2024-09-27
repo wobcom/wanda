@@ -1,5 +1,6 @@
 import pathlib
 import platform
+from collections import defaultdict
 from multiprocessing.pool import Pool
 
 from wanda.as_filter.as_filter import ASFilter
@@ -88,9 +89,6 @@ def main_customer_filter_lists(
             router_per_as[router_hostname] = {asn}
 
     for ixp in ixp_list:
-        if ixp['is_route_server']:
-            continue
-
         fc = list(filter(lambda c: c['id'] == ixp['ixp_connection']['id'], connections))
         connection = fc[0]
 
@@ -98,6 +96,11 @@ def main_customer_filter_lists(
         router_hostname = connection['router']['hostname']
 
         if hosts and router_hostname not in hosts:
+            continue
+
+        if ixp['is_route_server']:
+            if router_hostname not in router_per_as:
+                router_per_as[router_hostname] = {}
             continue
 
         enabled_asn.add(asn)
@@ -135,7 +138,7 @@ def main_customer_filter_lists(
         n_worker = max_threads
         l.warning(f"Running with a limited amount of threads, n_worker={max_threads}")
     elif system_platform == "Linux":
-        n_worker = len(prepared_asns)
+        n_worker = max(len(prepared_asns), 1)
     else:
         l.warning("Running with a limited amount of threads due to OS limitations...")
         n_worker = 8
