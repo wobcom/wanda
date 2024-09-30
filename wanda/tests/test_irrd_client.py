@@ -29,9 +29,9 @@ WOBCOM_PREFIX_LIST_MOCK_V6 = """
 AS_PATH_WOBCOM = """
 policy-options {
 replace:
- as-path-group AS9136 {
-  as-path a0 "^9136(9136)*$";
-  as-path a1 "^9136(.)*(112|248|250)$";
+ as-list-group AS9136_ORIGINS {
+  as-list a0 members 9136;
+  as-list a1 members [ 112 248 250 3573 3624 6766 12654 12748 13020 13130 20488 21158 24679 24956 29670 31451 33940 34219 39788 41955 44194 44780 48387 48777 49009 49225 49745 49933 50017 50472 59568 59645 60729 60802 62028 64404 64475 197532 198824 200490 201173 201567 201701 202329 204867 204911 205597 206236 206313 206356 206506 206554 206618 206740 206813 206946 207180 207592 207871 207921 208135 208183 208230 208395 208633 208727 208772 208893 208942 209347 209530 209894 210909 210916 211286 211479 212488 212520 212989 213027 213097 213106 213341 215236 215250 216188 216355 216441 396507 ];
  }
 }
 """
@@ -39,8 +39,8 @@ replace:
 AS_PATH_WDZ = """
 policy-options {
 replace:
- as-path-group AS208395 {
-  as-path a0 "^208395(208395)*$";
+ as-list-group AS208395_ORIGINS {
+  as-list a0 members 208395;
  }
 }
 """
@@ -101,10 +101,10 @@ class TestIRRDClient:
         assert "policy-options" not in access_list
         assert "replace:" not in access_list
 
-        assert access_list.startswith(f"as-path-group AS{asn} {{\n")
+        assert access_list.startswith(f"as-list AS{asn}_NEIGHBOR members {asn};\nas-list-group AS{asn}_ORIGINS {{\n")
         assert access_list.endswith(f"\n}}")
 
-        assert f"as-path a0 \"^{asn}({asn})*$\";" in access_list
+        assert f"as-list a0 members {asn};" in access_list
 
     def test_invalid_bgpq4_prefix_lists(self, irrd_instance):
         with pytest.raises(Exception):

@@ -31,19 +31,20 @@ class IRRDClient:
         raise Exception("bgpq4 could not be called successfully, this may be an programming error or a bad internet connection.")
 
     def call_bgpq4_aspath_access_list(self, asn, irr_name):
-        command_array = ["bgpq4", *self.host_params, "-f", str(asn), "-W 100", "-J", "-l", f"AS{asn}", irr_name]
+        command_array = ["bgpq4", *self.host_params, "-H", str(asn), "-W 100", "-J", "-l", f"AS{asn}_ORIGINS", irr_name]
         return self.call_subprocess(command_array)
 
     def generate_input_aspath_access_list(self, asn, irr_name):
-        # bgpq4 AS-TELIANET-V6 -f 1299 -W 100 -J -l AS1299
+        # bgpq4 AS-TELIANET-V6 -H 1299 -W 100 -J -l AS1299_ORIGINS
         result_str = self.call_bgpq4_aspath_access_list(asn, irr_name)
-        m = re.search(r'.*as-path-group.*{(.|\n)*?}', result_str)
+        m = re.search(r'.*as-list-group.*{(.|\n)*?}', result_str)
 
         if m:
-            # Technically, returning m[0] would work, but we do some cleaning for better quality of the generated configuration
+            # Technically, only adding the AS..._NEIGHBOR list would work, but we do some cleaning for better quality of the generated configuration
 
             lines = m[0].split("\n")
             new_lines = list()
+            new_lines.append(f"as-list AS{asn}_NEIGHBOR members {asn};")
             indent_count = 0
 
             for line in lines:
