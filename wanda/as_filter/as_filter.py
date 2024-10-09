@@ -62,7 +62,8 @@ prefix-list AS{self.autos.asn}_V6 {{
 policy-statement POLICY_AS{self.autos.asn}_V4 {{
     term FILTER_LISTS {{
         from {{
-            as-path-group AS{self.autos.asn};
+            as-path-neighbors as-list AS{self.autos.asn}_NEIGHBOR;
+            as-path-origins as-list-group AS{self.autos.asn}_ORIGINS;
             prefix-list-filter AS{self.autos.asn}_V4 orlonger;
         }}
         then next policy;
@@ -73,7 +74,8 @@ policy-statement POLICY_AS{self.autos.asn}_V4 {{
 policy-statement POLICY_AS{self.autos.asn}_V6 {{
     term FILTER_LISTS {{
         from {{
-            as-path-group AS{self.autos.asn};
+            as-path-neighbors as-list AS{self.autos.asn}_NEIGHBOR;
+            as-path-origins as-list-group AS{self.autos.asn}_ORIGINS;
             prefix-list-filter AS{self.autos.asn}_V6 orlonger;
         }}
         then next policy;
@@ -85,7 +87,10 @@ policy-statement POLICY_AS{self.autos.asn}_V6 {{
             file_content += f"""
 policy-statement POLICY_AS{self.autos.asn}_V4 {{
     term IMPORT_AS_PATHS {{
-        from as-path-group AS{self.autos.asn};
+        from {{
+            as-path-neighbors as-list AS{self.autos.asn}_NEIGHBOR;
+            as-path-origins as-list-group AS{self.autos.asn}_ORIGINS;
+        }}
         then next policy;
     }}
     then reject;
@@ -93,7 +98,10 @@ policy-statement POLICY_AS{self.autos.asn}_V4 {{
 
 policy-statement POLICY_AS{self.autos.asn}_V6 {{
     term IMPORT_AS_PATHS {{
-        from as-path-group AS{self.autos.asn};
+        from {{
+            as-path-neighbors as-list AS{self.autos.asn}_NEIGHBOR;
+            as-path-origins as-list-group AS{self.autos.asn}_ORIGINS;
+        }}
         then next policy;
     }}
     then reject;
