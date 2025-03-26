@@ -22,8 +22,16 @@ def check_for_consistency(bgp_device_groups, filter_groups_file_content):
                 return False
     return True
 
+def enrich_routing_policies(group_policies, routing_policies):
+    enriched_policies = []
+    for pol in group_policies:
+        for i in routing_policies:
+            if i['id'] == pol['id']:
+                enriched_policies.append(i)
+    return enriched_policies
 
-def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list):
+
+def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, routing_policies):
     bgp_device_groups = []
     for connection in connections:
       for ix in ix_peerings:
@@ -91,8 +99,8 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list):
                   ip_version=ip_version,
                   max_prefixes=max_prefixes,
                   policy_type=policy_type,
-                  import_routing_policies=ix['import_routing_policies'],
-                  export_routing_policies=ix['export_routing_policies'],
+                  import_routing_policies=enrich_routing_policies(ix['import_routing_policies'], routing_policies),
+                  export_routing_policies=enrich_routing_policies(ix['export_routing_policies'], routing_policies),
                   authentication_key=authentication_key,
                   bfd_infos=bfd_infos,
                   is_route_server=ix['is_route_server'],
@@ -105,7 +113,7 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list):
     return bgp_device_groups
 
 
-def build_bgp_device_groups_for_direct_peerings(direct_peerings, router):
+def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing_policies):
     bgp_device_groups = []
     for dp in direct_peerings:
 
@@ -182,8 +190,8 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router):
                 max_prefixes=max_prefixes,
                 authentication_key=authentication_key,
                 policy_type=policy_type,
-                import_routing_policies=dp['import_routing_policies'],
-                export_routing_policies=dp['export_routing_policies'],
+                import_routing_policies=enrich_routing_policies(dp['import_routing_policies'], routing_policies),
+                export_routing_policies=enrich_routing_policies(dp['export_routing_policies'], routing_policies),
                 bfd_infos=bfd_infos,
                 is_route_server=False,
             )
@@ -199,12 +207,13 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, hosts=No
 
     e_targets = enlighten_manager.counter(total=5, desc='Fetching Data', unit='Targets')
 
-    with Pool(processes=5) as fetch_pool:
+    with Pool(processes=6) as fetch_pool:
         ix_peerings_res = fetch_pool.apply_async(peering_manager_instance.get_internet_exchange_peerings, ())
         direct_peerings_res = fetch_pool.apply_async(peering_manager_instance.get_direct_peerings, ())
         routers_res = fetch_pool.apply_async(peering_manager_instance.get_routers, ())
         connections_res = fetch_pool.apply_async(peering_manager_instance.get_connections, ())
         as_list_res = fetch_pool.apply_async(peering_manager_instance.get_autonomous_systems, ())
+        routing_policies_res = fetch_pool.apply_async(peering_manager_instance.get_routing_policies, ())
 
         ix_peerings = ix_peerings_res.get()
         e_targets.update()
@@ -215,6 +224,8 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, hosts=No
         connections = connections_res.get()
         e_targets.update()
         as_list = as_list_res.get()
+        e_targets.update()
+        routing_policies = routing_policies_res.get()
         e_targets.update()
 
     e_targets.close()
@@ -248,9 +259,9 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, hosts=No
 
         router_connections = list(filter(lambda c: c['router'] and c['router']['id'] == router['id'], connections))
 
-        bgp_device_groups = build_bgp_device_groups_for_ix_peerings(ix_peerings, router_connections, as_list)
+        bgp_device_groups = build_bgp_device_groups_for_ix_peerings(ix_peerings, router_connections, as_list, routing_policies)
 
-        y = build_bgp_device_groups_for_direct_peerings(direct_peerings, router)
+        y = build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing_policies)
         bgp_device_groups.extend(y)
 
         # Consistency check for filter groups

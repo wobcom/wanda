@@ -21,6 +21,7 @@ class PeeringManagerClient:
         self.cached_internet_exchange_peerings = None
         self.cached_direct_peerings = None
         self.cached_autonomous_systems = None
+        self.cached_routing_policies = None
 
     def make_request_list(self, url):
         headers = {
@@ -77,3 +78,8 @@ class PeeringManagerClient:
         if not self.cached_autonomous_systems:
             self.cached_autonomous_systems = self.make_request_list('/api/peering/autonomous-systems/')
         return self.cached_autonomous_systems
+
+    def get_routing_policies(self):
+        if not self.cached_routing_policies:
+            self.cached_routing_policies = self.make_request_list('/api/peering/routing-policies/')
+        return self.cached_routing_policies

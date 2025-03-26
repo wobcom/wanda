@@ -48,3 +48,7 @@ class TestPeeringManagerClient:
     def test_as(self, peeringmanager_instance):
         as_list = peeringmanager_instance.get_autonomous_systems()
         assert isinstance(as_list, list)
+
+    def test_routing_policies(self, peeringmanager_instance):
+        routing_policies = peeringmanager_instance.get_routing_policies()
+        assert isinstance(routing_policies, list)
