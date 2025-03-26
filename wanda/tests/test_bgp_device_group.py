@@ -173,17 +173,19 @@ class TestBGPDeviceGroup:
         assert import_policies == expected_policies
 
     @pytest.mark.parametrize(
-        "bdg,expected_import_policy",
+        "bdg,expected_import_policy,expected_position",
         [
-            (get_bgp_device_group_4(import_routing_policies=[{"name": "IMPORT_LUMEN_42"}]), "IMPORT_LUMEN_42"),
-            (get_bgp_device_group_6(import_routing_policies=[{"name": "IMPORT_LUMEN_42"}]), "IMPORT_LUMEN_42"),
+            (get_bgp_device_group_4(import_routing_policies=[{"name": "IMPORT_LUMEN_42", "weight": 0}]), "IMPORT_LUMEN_42", 6),
+            (get_bgp_device_group_6(import_routing_policies=[{"name": "IMPORT_LUMEN_42", "weight": 0}]), "IMPORT_LUMEN_42", 6),
+            (get_bgp_device_group_4(import_routing_policies=[{"name": "IMPORT_LUMEN_42", "weight": 1000}]), "IMPORT_LUMEN_42", 0),
+            (get_bgp_device_group_6(import_routing_policies=[{"name": "IMPORT_LUMEN_42", "weight": 1000}]), "IMPORT_LUMEN_42", 0),
         ]
     )
-    def test_additional_import_policies(self, bdg, expected_import_policy):
+    def test_additional_import_policies(self, bdg, expected_import_policy, expected_position):
         export_policies = bdg.get_import_policies()
 
         assert len(export_policies) == 9
-        assert export_policies[6] == expected_import_policy
+        assert export_policies[expected_position] == expected_import_policy
 
     @pytest.mark.parametrize(
         "bdg,min_interval,multiplier",

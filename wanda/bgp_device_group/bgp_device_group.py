@@ -73,14 +73,18 @@ class BGPDeviceGroup:
         if self.policy_type != "customer":
             scrub_communities.append("SCRUB_COMMUNITIES")
 
+        pre_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] >= 1000]
+        custom_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] < 1000]
+
         return [
+            *pre_policies,
             f"FILTER_BOGONS_{ip_suffix}",
             f"FILTER_OWN_{ip_suffix}",
             f"BOGON_ASN_FILTERING",
             *scrub_communities,
             *tier1_filter,
             "RPKI_FILTERING",
-            *map(lambda x: x['name'], self.import_routing_policies),
+            *custom_policies,
             *import_filter,
             f"{policy_prefix}_IMPORT_{ip_suffix}",
         ]
