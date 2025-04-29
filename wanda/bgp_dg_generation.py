@@ -202,7 +202,7 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing
     return bgp_device_groups
 
 
-def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, hosts=None) -> int:
+def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, wanda_configuration, hosts=None) -> int:
     l.hint(f"Fetching needed data from PeeringManager, make sure VPN is enabled on your system.")
 
     e_targets = enlighten_manager.counter(total=5, desc='Fetching Data', unit='Targets')
@@ -236,11 +236,12 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, hosts=No
             if host not in router_list:
                 l.warning(f"{host} is not a known host, ignoring...")
 
-    enabled_routers = list(filter(lambda r: (not hosts) or (r['hostname'] in hosts), routers))
+    config_hosts = wanda_configuration.get('devices', [])
+
+    enabled_routers = list(filter(lambda r: ((not hosts) or (r['hostname'] in hosts)) and ((not config_hosts) or (r['name'] in config_hosts)), routers))
     e_routers = enlighten_manager.counter(total=len(enabled_routers), desc='Generating Configurations', unit='Router')
 
     for router in enabled_routers:
-
         automated_tag = next(filter(lambda t: t['name'] == "automated", router['tags']), None)
         if not automated_tag:
             e_routers.update()

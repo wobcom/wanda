@@ -28,6 +28,7 @@ def main_customer_filter_lists(
         sync_manager,
         peering_manager_instance,
         irrd_client,
+        wanda_configuration,
         hosts=None,
         max_threads=-1,
 ) -> int:

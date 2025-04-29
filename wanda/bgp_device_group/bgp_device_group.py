@@ -6,7 +6,8 @@ from .junos_secret import juniper_encrypt
 class BGPDeviceGroup:
 
     def __init__(self, name, asn, ip_version, max_prefixes, policy_type=None, authentication_key=None,
-                 import_routing_policies=None, export_routing_policies=None, bfd_infos=None, is_route_server=False, ix_id=0):
+                 import_routing_policies=None, export_routing_policies=None, bfd_infos=None, is_route_server=False,
+                 ix_id=0, ip_address=None):
 
         self.name = name
         self.asn = asn
