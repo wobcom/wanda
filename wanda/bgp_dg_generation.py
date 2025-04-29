@@ -5,6 +5,7 @@ import sys
 from multiprocessing import Pool
 
 import yaml
+import json
 
 from wanda.bgp_device_group.bgp_device_group import BGPDeviceGroup
 from wanda.logger import Logger
@@ -56,10 +57,13 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
           ip_version = parsed_peer_ipnetwork.version
 
           max_prefixes = 0
+          own_ip = None
           if ip_version == 4:
               max_prefixes = ix['autonomous_system']['ipv4_max_prefixes']
+              own_ip = ix['ixp_connection']['ipv4_address']
           elif ip_version == 6:
               max_prefixes = ix['autonomous_system']['ipv6_max_prefixes']
+              own_ip = ix['ixp_connection']['ipv6_address']
 
           existing_bgp_device_groups = list(
               filter(lambda x: x.asn == asn and x.ip_version == ip_version and x.ix_id == connection['internet_exchange_point']['id'], bgp_device_groups))
@@ -105,6 +109,7 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
                   bfd_infos=bfd_infos,
                   is_route_server=ix['is_route_server'],
                   ix_id=connection['internet_exchange_point']['id'],
+                  ip_address=own_ip,
               )
 
               bdg.append_ip(peer_ip)
@@ -130,6 +135,7 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing
 
         asn = dp['autonomous_system']['asn']
         peer_ip = dp["ip_address"]
+        own_ip = dp["local_ip_address"]
         authentication_key = None
         if "password" in dp:
             authentication_key = dp["password"]
@@ -194,12 +200,54 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing
                 export_routing_policies=enrich_routing_policies(dp['export_routing_policies'], routing_policies),
                 bfd_infos=bfd_infos,
                 is_route_server=False,
+                ip_address=own_ip,
             )
 
             bdg.append_ip(peer_ip)
             bgp_device_groups.append(bdg)
 
     return bgp_device_groups
+
+
+def write_junos(router, e_routers, bgp_device_groups):
+    junos_bgp_device_groups = list(map(lambda g: g.to_junos(), bgp_device_groups))
+
+    e = {
+        "junos__generated_device_bgp_groups": {bdg['name']: bdg for index, bdg in
+                                               enumerate(junos_bgp_device_groups)}
+    }
+
+    def noop(self, *args, **kw):
+        pass
+
+    yaml.emitter.Emitter.process_tag = noop
+    pathlib.Path("./generated_vars").mkdir(parents=True, exist_ok=True)
+    with open('./generated_vars/bgp_device_groups-' + router['hostname'] + '.yml', 'w') as yaml_file:
+        yaml.dump(e, yaml_file, default_flow_style=False)
+        e_routers.update()
+
+
+def write_rtbrick(router, e_routers, bgp_device_groups):
+    rtbrick_bgp_device_groups = list(map(lambda g: g.to_rtbrick(), bgp_device_groups))
+
+    e = {
+        "routing_instances": {
+            "default": {
+                "protocols": {
+                    "bgp": {
+                        "groups": {bdg.pop('name'): bdg for index, bdg in
+                                               enumerate(rtbrick_bgp_device_groups)}
+                    }
+                }
+            }
+        }
+    }
+
+    path = f"./machines/{router['name'].lower()}"
+    pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+    with open(path + '/generated-wanda.json', 'w') as json_file:
+        json.dump(e, json_file, indent=4)
+        e_routers.update()
 
 
 def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, wanda_configuration, hosts=None) -> int:
@@ -236,6 +284,11 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, wanda_co
             if host not in router_list:
                 l.warning(f"{host} is not a known host, ignoring...")
 
+    wanda_mode = wanda_configuration.get('mode', 'junos')
+    if wanda_mode not in ['junos', 'rtbrick']:
+        l.error(f"{wanda_mode} is not a known mode, not able to generate configuration")
+        sys.exit(32)
+
     config_hosts = wanda_configuration.get('devices', [])
 
     enabled_routers = list(filter(lambda r: ((not hosts) or (r['hostname'] in hosts)) and ((not config_hosts) or (r['name'] in config_hosts)), routers))
@@ -248,48 +301,41 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, wanda_co
             l.info(f"Skipping {router['hostname']}, because there is no 'automated' tag. ")
             continue
 
-        filter_groups_file_path = './generated_vars/filter_groups-' + router['hostname'] + '.tmpl'
-        file_exists = os.path.exists(filter_groups_file_path)
+        if wanda_mode == "junos":
+            filter_groups_file_path = './generated_vars/filter_groups-' + router['hostname'] + '.tmpl'
+            file_exists = os.path.exists(filter_groups_file_path)
 
-        if not file_exists:
-            l.error(f"Required filter_groups file for {router['hostname']} does not exist.")
-            continue
+            if not file_exists:
+                l.error(f"Required filter_groups file for {router['hostname']} does not exist.")
+                continue
 
-        filter_groups_file = open(filter_groups_file_path, 'r')
-        filter_groups_file_content = filter_groups_file.read()
+            filter_groups_file = open(filter_groups_file_path, 'r')
+            filter_groups_file_content = filter_groups_file.read()
 
         router_connections = list(filter(lambda c: c['router'] and c['router']['id'] == router['id'], connections))
 
-        bgp_device_groups = build_bgp_device_groups_for_ix_peerings(ix_peerings, router_connections, as_list, routing_policies)
+        bgp_device_groups = build_bgp_device_groups_for_ix_peerings(ix_peerings, router_connections, as_list,
+                                                                    routing_policies)
 
         y = build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing_policies)
         bgp_device_groups.extend(y)
 
-        # Consistency check for filter groups
-        # We generate filter groups beforehand and need to check if every request filter group
-        # is also correctly templated. If not, the filter group configuration is broken
-        # or the generated data is too old.
+        if wanda_mode == "junos":
+            # Consistency check for filter groups
+            # We generate filter groups beforehand and need to check if every request filter group
+            # is also correctly templated. If not, the filter group configuration is broken
+            # or the generated data is too old.
 
-        is_consistent = check_for_consistency(bgp_device_groups, filter_groups_file_content)
-        if not is_consistent:
-            l.error(f"Inconsistency within filter groups for {router['hostname']}, need to regenerate filter groups")
-            sys.exit(42)
+            is_consistent = check_for_consistency(bgp_device_groups, filter_groups_file_content)
+            if not is_consistent:
+                l.error(f"Inconsistency within filter groups for {router['hostname']}, need to regenerate filter groups")
+                sys.exit(42)
 
-        junos_bgp_device_groups = list(map(lambda g: g.to_junos(), bgp_device_groups))
-
-        e = {
-            "junos__generated_device_bgp_groups": {bdg['name']: bdg for index, bdg in
-                                                   enumerate(junos_bgp_device_groups)}
-        }
-
-        def noop(self, *args, **kw):
-            pass
-
-        yaml.emitter.Emitter.process_tag = noop
-        pathlib.Path("./generated_vars").mkdir(parents=True, exist_ok=True)
-        with open('./generated_vars/bgp_device_groups-' + router['hostname'] + '.yml', 'w') as yaml_file:
-            yaml.dump(e, yaml_file, default_flow_style=False)
-            e_routers.update()
+        match wanda_configuration.get('mode', 'junos'):
+            case 'junos':
+                write_junos(router, e_routers, bgp_device_groups)
+            case 'rtbrick':
+                write_rtbrick(router, e_routers, bgp_device_groups)
 
     e_routers.close()
     return 0

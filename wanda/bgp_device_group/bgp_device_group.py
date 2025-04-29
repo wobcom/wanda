@@ -20,6 +20,7 @@ class BGPDeviceGroup:
         self.bfd_infos = bfd_infos
         self.is_route_server = is_route_server
         self.ix_id = ix_id
+        self.ip_address = str(ipaddress.ip_address(str(ip_address).split("/")[0])) if ip_address else None
         self.ips = []
 
     def append_ip(self, ip_address):
@@ -147,3 +148,57 @@ class BGPDeviceGroup:
             junos_elem["authentication_key"] = juniper_encrypt(self.authentication_key, 'm')
 
         return junos_elem
+
+    def to_rtbrick(self):
+        if not self.ip_address:
+            raise Exception('Local IP Address is required on RtBrick routers')
+
+        # name contains an ip version suffix every time.
+        shorted_name = self.name
+        if len(self.name) > 32:
+            as_len = len(str(self.asn))
+            cap = 29 - as_len - 1
+            shorted_name = f'{self.name[0:-3][:cap]}_{str(self.asn)}{self.name[-3:]}'
+
+        rtbrick_elem = {
+            "name": shorted_name,
+            "peer_as": self.asn,
+            "type": "external",
+            "local_address": self.ip_address,
+            "family": {},
+            "neighbors": list(
+                map(
+                    lambda ip: {
+                        "peer": ip
+                    },
+                    self.ips
+                )
+            ),
+        }
+
+        # TODO
+        # if self.bfd_infos:
+        #     rtbrick_elem['bfd'] = {
+        #         "min_interval": self.bfd_infos['min_interval'],
+        #         "multiplier": self.bfd_infos['multiplier'],
+        #     }
+
+        family_name = None
+        match self.ip_version:
+            case 4:
+                family_name = "ipv4_unicast"
+            case 6:
+                family_name = "ipv6_unicast"
+
+        rtbrick_elem["family"][family_name] = {}
+        rtbrick_elem["family"][family_name]["policy"] = {
+            "export": self.get_export_policies(),
+            "import": self.get_import_policies(),
+        }
+        if self.policy_type != "transit":
+            rtbrick_elem["family"][family_name]["max_prefixes"] = self.max_prefixes
+
+        if self.authentication_key:
+            rtbrick_elem["authentication_key"] = self.authentication_key
+
+        return rtbrick_elem
