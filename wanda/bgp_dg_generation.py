@@ -48,21 +48,21 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
               l.info(f'id 22 !!! {ix}')
 
           asn = ix['autonomous_system']['asn']
-          peer_ip = ix["ip_address"]
+          peer_ip = str(ix["ip_address"]).split("/")[0]
           authentication_key = None
           if "password" in ix:
               authentication_key = ix["password"]
 
-          parsed_peer_ipnetwork = ipaddress.ip_network(peer_ip, strict=False)
-          ip_version = parsed_peer_ipnetwork.version
+          parsed_peer_ip = ipaddress.ip_address(peer_ip)
+          ip_version = parsed_peer_ip.version
 
           max_prefixes = 0
           own_ip = None
           if ip_version == 4:
               max_prefixes = ix['autonomous_system']['ipv4_max_prefixes']
-              own_ip = ix['ixp_connection']['ipv4_address']
+              own_ip = str(ix['ixp_connection']['ipv4_address']).split("/")[0]
           elif ip_version == 6:
-              max_prefixes = ix['autonomous_system']['ipv6_max_prefixes']
+              max_prefixes = str(ix['autonomous_system']['ipv6_max_prefixes']).split("/")[0]
               own_ip = ix['ixp_connection']['ipv6_address']
 
           existing_bgp_device_groups = list(
@@ -74,7 +74,7 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
           existing_bgp_device_group = next(iter(existing_bgp_device_groups), None)
 
           if existing_bgp_device_group:
-              existing_bgp_device_group.append_ip(peer_ip)
+              existing_bgp_device_group.append_neighbor(peer_ip, own_ip)
           else:
 
               ix_slug = str.upper(connection['internet_exchange_point']['slug'])
@@ -109,10 +109,9 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
                   bfd_infos=bfd_infos,
                   is_route_server=ix['is_route_server'],
                   ix_id=connection['internet_exchange_point']['id'],
-                  ip_address=own_ip,
               )
 
-              bdg.append_ip(peer_ip)
+              bdg.append_neighbor(peer_ip, own_ip)
               bgp_device_groups.append(bdg)
 
     return bgp_device_groups
@@ -134,14 +133,14 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing
             continue
 
         asn = dp['autonomous_system']['asn']
-        peer_ip = dp["ip_address"]
-        own_ip = dp["local_ip_address"]
+        peer_ip = str(dp["ip_address"]).split("/")[0]
+        own_ip = str(dp["local_ip_address"]).split("/")[0]
         authentication_key = None
         if "password" in dp:
             authentication_key = dp["password"]
 
-        parsed_peer_ipnetwork = ipaddress.ip_network(peer_ip, strict=False)
-        ip_version = parsed_peer_ipnetwork.version
+        parsed_peer_ip = ipaddress.ip_address(peer_ip)
+        ip_version = parsed_peer_ip.version
 
         max_prefixes = 0
         if ip_version == 4:
@@ -158,7 +157,7 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing
         existing_bgp_device_group = next(iter(existing_bgp_device_groups), None)
 
         if existing_bgp_device_group:
-            existing_bgp_device_group.append_ip(peer_ip)
+            existing_bgp_device_group.append_neighbor(peer_ip, own_ip)
 
         else:
 
@@ -200,10 +199,9 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing
                 export_routing_policies=enrich_routing_policies(dp['export_routing_policies'], routing_policies),
                 bfd_infos=bfd_infos,
                 is_route_server=False,
-                ip_address=own_ip,
             )
 
-            bdg.append_ip(peer_ip)
+            bdg.append_neighbor(peer_ip, own_ip)
             bgp_device_groups.append(bdg)
 
     return bgp_device_groups

@@ -7,7 +7,7 @@ class BGPDeviceGroup:
 
     def __init__(self, name, asn, ip_version, max_prefixes, policy_type=None, authentication_key=None,
                  import_routing_policies=None, export_routing_policies=None, bfd_infos=None, is_route_server=False,
-                 ix_id=0, ip_address=None):
+                 ix_id=0):
 
         self.name = name
         self.asn = asn
@@ -20,17 +20,10 @@ class BGPDeviceGroup:
         self.bfd_infos = bfd_infos
         self.is_route_server = is_route_server
         self.ix_id = ix_id
-        self.ip_address = str(ipaddress.ip_address(str(ip_address).split("/")[0])) if ip_address else None
-        self.ips = []
+        self.neighbors = []
 
-    def append_ip(self, ip_address):
-
-        # We need to split the ip_address at "/" to remove the CIDR.
-        raw_ip = str(ip_address).split("/")[0]
-        # Making sure, this is still a valid IP address.
-        parsed_ip = ipaddress.ip_address(raw_ip)
-
-        self.ips.append(str(parsed_ip))
+    def append_neighbor(self, ip_address, own_ip):
+        self.neighbors.append({ "peer": str(ip_address).split("/")[0], "local_address": str(own_ip).split("/")[0] })
 
     def get_template_params(self):
         ip_suffix = ""
@@ -123,10 +116,10 @@ class BGPDeviceGroup:
             "family": {},
             "neighbors": list(
                 map(
-                    lambda ip: {
-                        "peer": ip
+                    lambda neighbor: {
+                        "peer": neighbor['peer']
                     },
-                    self.ips
+                    self.neighbors
                 )
             ),
         }
@@ -150,9 +143,6 @@ class BGPDeviceGroup:
         return junos_elem
 
     def to_rtbrick(self):
-        if not self.ip_address:
-            raise Exception('Local IP Address is required on RtBrick routers')
-
         # name contains an ip version suffix every time.
         shorted_name = self.name
         if len(self.name) > 32:
@@ -164,16 +154,8 @@ class BGPDeviceGroup:
             "name": shorted_name,
             "peer_as": self.asn,
             "type": "external",
-            "local_address": self.ip_address,
             "family": {},
-            "neighbors": list(
-                map(
-                    lambda ip: {
-                        "peer": ip
-                    },
-                    self.ips
-                )
-            ),
+            "neighbors": self.neighbors
         }
 
         # TODO

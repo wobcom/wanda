@@ -16,11 +16,13 @@ def get_bgp_device_group_4(**kwargs):
         **kwargs
     )
 
-    group.append_ip(
-        "203.0.113.42/24"
+    group.append_neighbor(
+        "203.0.113.42",
+        "203.0.113.1"
     )
-    group.append_ip(
-        "203.0.113.69/24"
+    group.append_neighbor(
+        "203.0.113.69",
+        "203.0.113.1"
     )
 
     return group
@@ -35,11 +37,13 @@ def get_bgp_device_group_6(**kwargs):
         **kwargs
     )
 
-    group.append_ip(
-        "2001:db8::42/64"
+    group.append_neighbor(
+        "2001:db8::42",
+        "2001:db8::1"
     )
-    group.append_ip(
-        "2001:db8::69/64"
+    group.append_neighbor(
+        "2001:db8::69",
+        "2001:db8::1"
     )
 
     return group
