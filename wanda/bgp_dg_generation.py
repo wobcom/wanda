@@ -289,7 +289,7 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, wanda_co
 
     config_hosts = wanda_configuration.get('devices', [])
 
-    enabled_routers = list(filter(lambda r: ((not hosts) or (r['hostname'] in hosts)) and ((not config_hosts) or (r['name'] in config_hosts)), routers))
+    enabled_routers = list(filter(lambda r: ((not hosts) or (r['hostname'] in hosts)) and ((not config_hosts) or (r['hostname'] in config_hosts)), routers))
     e_routers = enlighten_manager.counter(total=len(enabled_routers), desc='Generating Configurations', unit='Router')
 
     for router in enabled_routers:

@@ -9,7 +9,7 @@ The output is quite specific to our setup and automation stack, so consider it n
 ## Architecture
 
 The tooling connects to the [Peering-Manager](https://peering-manager.net/) API to fetch BGP sessions.
-Then it generates filters for those sessions using the tool bgpq4 that fetches data from an IRR server as data source.
+Then it generates filters for those sessions using the IRRD GraphQL API.
 
 We're not only using this to manage peering sessions, but *all* eBGP sessions, so transit and downstream as well.
 
@@ -117,8 +117,6 @@ If you are using Nix as a package manager you can can start right away using the
 For everyone else:
 - Install Python3 packages listed in `requirements.txt`
   - `pip3 install -r requirements.txt`
-- bgpq4
-  - `apt install bgpq4`
 
 
 ### Usage

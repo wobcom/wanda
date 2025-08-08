@@ -45,7 +45,6 @@
 
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            bgpq4
             wanda.dependencyEnv
           ];
         };
