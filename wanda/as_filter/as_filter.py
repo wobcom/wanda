@@ -39,11 +39,11 @@ class ASFilter:
 
         irr_names = self.autos.get_irr_names()
         filters = {}
-        filters['origin_asns'] = self.irrd_client.generate_input_aspath_access_list(self.autos.asn, irr_names[0])
+        filters['origin_asns'] = sorted(self.irrd_client.generate_input_aspath_access_list(self.autos.asn, irr_names[0]))
 
         if enable_extended_filters:
             v4_set, v6_set = self.prefix_lists
-            filters['v4_prefixes'] = v4_set
-            filters['v6_prefixes'] = v6_set
+            filters['v4_prefixes'] = sorted(v4_set)
+            filters['v6_prefixes'] = sorted(v6_set)
 
         return filters
