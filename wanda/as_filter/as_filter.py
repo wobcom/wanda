@@ -23,15 +23,20 @@ class ASFilter:
 
         irr_names = self.autos.get_irr_names()
 
-        for irr_name in irr_names:
-            result_entries_v4, result_entries_v6 = self.irrd_client.generate_prefix_lists(irr_name)
+        if not irr_names:
+            result_entries_v4, result_entries_v6 = self.irrd_client.generate_prefix_lists_for_asn(self.autos.asn)
 
             v4_set.update(result_entries_v4)
             v6_set.update(result_entries_v6)
+        else:
+            for irr_name in irr_names:
+                result_entries_v4, result_entries_v6 = self.irrd_client.generate_prefix_lists(irr_name)
+
+                v4_set.update(result_entries_v4)
+                v6_set.update(result_entries_v6)
 
         if len(v4_set) == 0 and len(v6_set) == 0 and self.is_customer:
-            raise Exception(
-                f"{self.autos} has neither IPv4, nor IPv6 filter lists. Since AS is our customer, we forbid this for security reasons.")
+            raise Exception(f"{self.autos} has neither IPv4, nor IPv6 filter lists. Since AS is our customer, we forbid this for security reasons.")
 
         return list(v4_set), list(v6_set)
 
@@ -39,7 +44,12 @@ class ASFilter:
 
         irr_names = self.autos.get_irr_names()
         filters = {}
-        filters['origin_asns'] = sorted(self.irrd_client.generate_input_aspath_access_list(self.autos.asn, irr_names[0]))
+
+        if irr_names:
+            filters['origin_asns'] = sorted(self.irrd_client.generate_input_aspath_access_list(self.autos.asn, irr_names[0]))
+        else:
+            filters['origin_asns'] = [self.autos.asn]
+
 
         if enable_extended_filters:
             v4_set, v6_set = self.prefix_lists

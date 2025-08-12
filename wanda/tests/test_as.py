@@ -10,7 +10,7 @@ class TestAutonomousSystem:
         "asn,name,irr_names,expected_irr_names",
         [
             (9136, "WOBCOM", "AS-WOBCOM", ["AS-WOBCOM"]),
-            (208395, "WDZ", "", ["AS208395"]),
+            (208395, "WDZ", "", []),
             (1299, "Twelve99", "RIPE::AS-TELIANET RIPE::AS-TELIANET-V6", ["AS-TELIANET", "AS-TELIANET-V6"])
         ]
     )
@@ -24,5 +24,4 @@ class TestAutonomousSystem:
         irr_names_set = set(autos.get_irr_names())
         expected_irr_names_set = set(expected_irr_names)
 
-        assert len(irr_names_set) > 0
         assert irr_names_set == expected_irr_names_set

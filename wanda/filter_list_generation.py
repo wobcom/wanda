@@ -167,6 +167,8 @@ def main_customer_filter_lists(
             if asn in filter_lists:
                 config_parts[f"AS{asn}"] = filter_lists[asn]
 
+        path = f"./machines/{router_hostname.split(".")[0]}"
+        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
         with open('./machines/' + router_hostname.split(".")[0] + '/generated-wanda-filters.json', 'w') as json_file:
             json.dump(config_parts, json_file, indent=2)
 

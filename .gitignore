@@ -4,3 +4,6 @@ venv*
 
 .pytest_cache
 .idea
+
+machines/*
+wanda.yml

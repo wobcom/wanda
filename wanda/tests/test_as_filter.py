@@ -23,12 +23,9 @@ def get_asfilter(**kwargs):
     )
 
 
-AS_PATH_MOCK = """
-as-path-group AS9136 {
-    as-path a0 "^9136(9136)*$";
-    as-path a1 "^9136(.)*(112|248|250)$";
-}
-"""
+AS_PATH_MOCK = [
+    "9136"
+]
 
 WOBCOM_PREFIX_LIST_MOCK_V4 = [
     "203.0.113.0/26",
@@ -74,15 +71,18 @@ class TestASFilter:
             return_value=AS_PATH_MOCK
         )
 
-        file_content = asfilter.get_filter_lists(enable_extended_filters)
+        filter_content = asfilter.get_filter_lists(enable_extended_filters)
 
-        assert len(file_content) > 0
-
-        assert "policy-statement POLICY_AS9136_V4 {" in file_content
-        assert "policy-statement POLICY_AS9136_V6 {" in file_content
-        assert "as-path-group AS9136;"
+        assert "origin_asns" in filter_content
+        assert "9136" in filter_content['origin_asns']
 
         if enable_extended_filters:
-            assert WOBCOM_EXPECTED_PREFIX_LIST in file_content
-            assert "prefix-list-filter AS9136_V4 orlonger;"
-            assert "prefix-list-filter AS9136_V6 orlonger;"
+            assert "v4_prefixes" in filter_content
+            assert "v6_prefixes" in filter_content
+
+            assert filter_content["v4_prefixes"] == WOBCOM_PREFIX_LIST_MOCK_V4
+            assert filter_content["v6_prefixes"] == WOBCOM_PREFIX_LIST_MOCK_V6
+
+        else:
+            assert "v4_prefixes" not in filter_content
+            assert "v6_prefixes" not in filter_content

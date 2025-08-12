@@ -5,45 +5,147 @@ import pytest
 
 from wanda.irrd_client import IRRDClient
 
-WDZ_PREFIX_LIST_MOCK_V4 = """
-198.51.100.0/24
-"""
-WDZ_PREFIX_LIST_MOCK_V6 = """
-2001:db8::42/32
-"""
+WDZ_PREFIX_LIST_MOCK_V4 = [
+    "198.51.100.0/24"
+]
 
-WOBCOM_PREFIX_LIST_MOCK_V4 = """
-203.0.113.0/26
-203.0.113.64/26
-203.0.113.128/26
-203.0.113.192/26
-"""
+WDZ_PREFIX_LIST_MOCK_V6 = [
+    "2001:db8::42/32"
+]
 
-WOBCOM_PREFIX_LIST_MOCK_V6 = """
-2001:db8::a/32
-2001:db8::c/32
-2001:db8::1/32
-2001:db8::5/32
-"""
+WOBCOM_PREFIX_LIST_MOCK_V4 = [
+    "203.0.113.0/26",
+    "203.0.113.64/26",
+    "203.0.113.128/26",
+    "203.0.113.192/26",
+]
 
-AS_PATH_WOBCOM = """
-policy-options {
-replace:
- as-list-group AS9136_ORIGINS {
-  as-list a0 members 9136;
-  as-list a1 members [ 112 248 250 3573 3624 6766 12654 12748 13020 13130 20488 21158 24679 24956 29670 31451 33940 34219 39788 41955 44194 44780 48387 48777 49009 49225 49745 49933 50017 50472 59568 59645 60729 60802 62028 64404 64475 197532 198824 200490 201173 201567 201701 202329 204867 204911 205597 206236 206313 206356 206506 206554 206618 206740 206813 206946 207180 207592 207871 207921 208135 208183 208230 208395 208633 208727 208772 208893 208942 209347 209530 209894 210909 210916 211286 211479 212488 212520 212989 213027 213097 213106 213341 215236 215250 216188 216355 216441 396507 ];
- }
-}
-"""
+WOBCOM_PREFIX_LIST_MOCK_V6 = [
+    "2001:db8::a/32",
+    "2001:db8::c/32",
+    "2001:db8::1/32",
+    "2001:db8::5/32",
+]
 
-AS_PATH_WDZ = """
-policy-options {
-replace:
- as-list-group AS208395_ORIGINS {
-  as-list a0 members 208395;
- }
-}
-"""
+AS_PATH_WOBCOM = [
+    "AS112",
+    "AS12654",
+    "AS12748",
+    "AS13020",
+    "AS13130",
+    "AS197532",
+    "AS198824",
+    "AS199522",
+    "AS200490",
+    "AS201173",
+    "AS201567",
+    "AS201701",
+    "AS202329",
+    "AS202955",
+    "AS203822",
+    "AS204082",
+    "AS204867",
+    "AS20488",
+    "AS204911",
+    "AS20495",
+    "AS205597",
+    "AS205726",
+    "AS205740",
+    "AS205839",
+    "AS206236",
+    "AS206313",
+    "AS206356",
+    "AS206506",
+    "AS206554",
+    "AS206618",
+    "AS206740",
+    "AS206813",
+    "AS206946",
+    "AS207180",
+    "AS207592",
+    "AS207871",
+    "AS207921",
+    "AS207943",
+    "AS208135",
+    "AS208183",
+    "AS208395",
+    "AS208633",
+    "AS208727",
+    "AS208772",
+    "AS208893",
+    "AS209347",
+    "AS209530",
+    "AS209792",
+    "AS209894",
+    "AS210122",
+    "AS210909",
+    "AS210916",
+    "AS211286",
+    "AS211479",
+    "AS21158",
+    "AS211623",
+    "AS211939",
+    "AS212322",
+    "AS212488",
+    "AS212520",
+    "AS212989",
+    "AS213027",
+    "AS213097",
+    "AS213106",
+    "AS213341",
+    "AS213346",
+    "AS213674",
+    "AS213997",
+    "AS214844",
+    "AS215236",
+    "AS215250",
+    "AS215877",
+    "AS216188",
+    "AS216351",
+    "AS216355",
+    "AS216441",
+    "AS24679",
+    "AS248",
+    "AS24956",
+    "AS250",
+    "AS29670",
+    "AS30870",
+    "AS31451",
+    "AS33940",
+    "AS34219",
+    "AS3573",
+    "AS3624",
+    "AS396507",
+    "AS39788",
+    "AS41955",
+    "AS42585",
+    "AS44194",
+    "AS44780",
+    "AS47496",
+    "AS48387",
+    "AS48777",
+    "AS49009",
+    "AS49225",
+    "AS49745",
+    "AS49933",
+    "AS50017",
+    "AS50472",
+    "AS57685",
+    "AS59568",
+    "AS59645",
+    "AS60729",
+    "AS60802",
+    "AS62028",
+    "AS62078",
+    "AS64404",
+    "AS64475",
+    "AS6766",
+    "AS9136"
+]
+
+AS_PATH_WDZ = [
+    "AS208395"
+]
 
 
 # We mock each response and threat this as a unit test since bgpq4 is considered stable.
@@ -70,8 +172,19 @@ class TestIRRDClient:
         (prefix_num_4, prefix_num_6) = prefix_num
 
         mocker.patch(
-            'wanda.irrd_client.IRRDClient.call_bgpq4_prefix_lists',
-            lambda self, irr_name, ip_version: prefix_list_v4 if ip_version == 4 else prefix_list_v6
+            'wanda.irrd_client.IRRDClient.fetch_graphql_data',
+            return_value={
+                "v4": [
+                    {
+                        "prefixes": prefix_list_v4
+                    }
+                ],
+                "v6": [
+                    {
+                        "prefixes": prefix_list_v6
+                    }
+                ]
+            }
         )
 
         prefix_list_4, prefix_list_6 = irrd_instance.generate_prefix_lists(irr_name)
@@ -91,22 +204,22 @@ class TestIRRDClient:
     )
     def test_input_as_path_access_list(self, mocker, irrd_instance, irr_name, asn, as_path_output):
         mocker.patch(
-            'wanda.irrd_client.IRRDClient.call_bgpq4_aspath_access_list',
-            return_value=as_path_output
+            'wanda.irrd_client.IRRDClient.fetch_graphql_data',
+            return_value={
+                "recursiveSetMembers": [
+                    {
+                        "members": as_path_output
+                    }
+                ],
+            }
         )
 
         access_list = irrd_instance.generate_input_aspath_access_list(asn, irr_name)
 
-        # We need to strip some things out of the response.
-        assert "policy-options" not in access_list
-        assert "replace:" not in access_list
+        assert asn in access_list
+        assert all([isinstance(x, int) for x in access_list])
 
-        assert access_list.startswith(f"as-list AS{asn}_NEIGHBOR members {asn};\nas-list-group AS{asn}_ORIGINS {{\n")
-        assert access_list.endswith(f"\n}}")
-
-        assert f"as-list a0 members {asn};" in access_list
 
     def test_invalid_bgpq4_prefix_lists(self, irrd_instance):
         with pytest.raises(Exception):
             irrd_instance.call_bgpq4_prefix_lists("AS-WOBCOM", 5)
-
