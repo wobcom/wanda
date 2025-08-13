@@ -20,7 +20,7 @@ class IRRDClient:
     def generate_input_aspath_access_list(self, asn, irr_name):
         body = f"""
           {{
-              recursiveSetMembers(setNames: ["{irr_name}"], depth: 5) {{ members }}
+              recursiveSetMembers(setNames: ["{irr_name}"], depth: 8) {{ members }}
           }}
         """
         result = self.fetch_graphql_data(body)
