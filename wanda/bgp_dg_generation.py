@@ -66,8 +66,8 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
               max_prefixes = ix['autonomous_system']['ipv4_max_prefixes']
               own_ip = str(ix['ixp_connection']['ipv4_address']).split("/")[0]
           elif ip_version == 6:
-              max_prefixes = str(ix['autonomous_system']['ipv6_max_prefixes']).split("/")[0]
-              own_ip = ix['ixp_connection']['ipv6_address']
+              max_prefixes = ix['autonomous_system']['ipv6_max_prefixes']
+              own_ip = str(ix['ixp_connection']['ipv6_address']).split("/")[0]
 
           existing_bgp_device_groups = list(
               filter(lambda x: x.asn == asn and x.ip_version == ip_version and x.ix_id == connection['internet_exchange_point']['id'], bgp_device_groups))
