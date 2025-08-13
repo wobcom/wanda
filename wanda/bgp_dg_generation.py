@@ -228,7 +228,7 @@ def write_junos(router, e_routers, bgp_device_groups):
 
     # wanda might have been called without the filter generation portion.
     # So, we load the existing file here and check, if everything is consistent. If not, we abort before changing anything.
-    with open(f'./generated_vars/filter_groups-{router['hostname']}.yml', 'r') as yml_filter_file:
+    with open(f"./generated_vars/filter_groups-{router['hostname']}.yml", 'r') as yml_filter_file:
         filter_content = yaml.safe_load(yml_filter_file)
         is_consistent = check_for_consistency(bgp_device_groups, filter_content)
         if not is_consistent:
