@@ -2,6 +2,8 @@ import pathlib
 import platform
 from collections import defaultdict
 from multiprocessing.pool import Pool
+import json
+import yaml
 
 from wanda.as_filter.as_filter import ASFilter
 from wanda.autonomous_system.autonomous_system import AutonomousSystem
@@ -28,6 +30,7 @@ def main_customer_filter_lists(
         sync_manager,
         peering_manager_instance,
         irrd_client,
+        wanda_configuration,
         hosts=None,
         max_threads=-1,
 ) -> int:
@@ -64,11 +67,12 @@ def main_customer_filter_lists(
     router_per_as = {}
     enabled_asn = set()
     extended_filtering_as = set()
+    config_hosts = wanda_configuration.get('devices', [])
 
     for dp in dp_list:
         router_hostname = dp['router']['hostname']
 
-        if hosts and router_hostname not in hosts:
+        if (hosts and router_hostname not in hosts) or router_hostname not in config_hosts:
             continue
 
         asn = dp['autonomous_system']['asn']
@@ -95,12 +99,12 @@ def main_customer_filter_lists(
         asn = ixp['autonomous_system']['asn']
         router_hostname = connection['router']['hostname']
 
-        if hosts and router_hostname not in hosts:
+        if (hosts and router_hostname not in hosts) or router_hostname not in config_hosts:
             continue
 
         if ixp['is_route_server']:
             if router_hostname not in router_per_as:
-                router_per_as[router_hostname] = {}
+                router_per_as[router_hostname] = set()
             continue
 
         enabled_asn.add(asn)
@@ -158,14 +162,27 @@ def main_customer_filter_lists(
             l.info(f"Skipping {router['hostname']}, because there is no 'automated' tag. ")
             continue
 
-        config_parts = []
+        config_parts = {}
 
         for asn in as_list:
             if asn in filter_lists:
-                config_parts.append(filter_lists[asn])
+                config_parts[f"AS{asn}"] = filter_lists[asn]
 
-        pathlib.Path("./generated_vars").mkdir(parents=True, exist_ok=True)
-        with open('./generated_vars/filter_groups-' + router_hostname + '.tmpl', 'w') as yaml_file:
-            yaml_file.write("\n".join(config_parts))
+        short_router_hostname = router_hostname.split(".")[0]
+
+        match wanda_configuration.get('mode', 'junos'):
+            case 'junos':
+                destination_path = f"./generated_vars/"
+                pathlib.Path(destination_path).mkdir(parents=True, exist_ok=True)
+                destination_file = f"{destination_path}/filter_groups-{router_hostname}.yml"
+                with open(destination_file, 'w') as yaml_file:
+                    dump = yaml.dump(config_parts, default_flow_style=False)
+                    yaml_file.write(dump)
+            case 'rtbrick':
+                destination_path = f"./machines/{short_router_hostname}"
+                pathlib.Path(destination_path).mkdir(parents=True, exist_ok=True)
+                destination_file = f"{destination_path}/generated-wanda-filters.json"
+                with open(destination_file, 'w') as json_file:
+                    json.dump(config_parts, json_file, indent=2)
 
     return 0

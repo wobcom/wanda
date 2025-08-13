@@ -4,6 +4,7 @@ from multiprocessing.managers import SyncManager
 
 import enlighten
 import argparse
+import yaml
 
 from wanda.bgp_dg_generation import main_bgp
 from wanda.filter_list_generation import main_customer_filter_lists
@@ -21,6 +22,7 @@ def main() -> int:
     parser.add_argument('--fast', action='store_true', help='Skips filter list generation')
     parser.add_argument('--limit', default=[], metavar="STRING", action="append", help='List of hosts to generate configurations')
     parser.add_argument('--threads', default=-1, type=int, help='Limits the amount of used threads')
+    parser.add_argument('--config', '-c', default='wanda.yml', help='Path of the yaml config file to use')
 
     args = parser.parse_args()
 
@@ -37,6 +39,10 @@ def main() -> int:
     peeringmanager_url = os.environ.get('PEERINGMANAGER_URL')
     peeringmanager_api_token = os.environ.get('PEERINGMANAGER_API_TOKEN')
 
+    wanda_configuration = {}
+    with open(args.config, 'r') as cfg_file:
+        wanda_configuration = yaml.safe_load(cfg_file)
+
     enlighten_manager = enlighten.get_manager()
 
     if peeringmanager_url is None:
@@ -52,10 +58,10 @@ def main() -> int:
     peering_manager_instance = manager.PeeringManagerClient(peeringmanager_url, peeringmanager_api_token)
 
     if mode == "full":
-        return_code1 = main_customer_filter_lists(enlighten_manager, manager, peering_manager_instance, irrd_client, hosts=hosts, max_threads=args.threads)
+        return_code1 = main_customer_filter_lists(enlighten_manager, manager, peering_manager_instance, irrd_client, wanda_configuration, hosts=hosts, max_threads=args.threads)
     else:
         return_code1 = 0
-    return_code2 = main_bgp(enlighten_manager, manager, peering_manager_instance, hosts=hosts)
+    return_code2 = main_bgp(enlighten_manager, manager, peering_manager_instance, wanda_configuration, hosts=hosts)
     return_code = return_code1 + return_code2
 
     enlighten_manager.stop()

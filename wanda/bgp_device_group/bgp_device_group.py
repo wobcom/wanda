@@ -6,7 +6,8 @@ from .junos_secret import juniper_encrypt
 class BGPDeviceGroup:
 
     def __init__(self, name, asn, ip_version, max_prefixes, policy_type=None, authentication_key=None,
-                 import_routing_policies=None, export_routing_policies=None, bfd_infos=None, is_route_server=False, ix_id=0):
+                 import_routing_policies=None, export_routing_policies=None, bfd_infos=None, is_route_server=False,
+                 ix_id=0):
 
         self.name = name
         self.asn = asn
@@ -19,16 +20,10 @@ class BGPDeviceGroup:
         self.bfd_infos = bfd_infos
         self.is_route_server = is_route_server
         self.ix_id = ix_id
-        self.ips = []
+        self.neighbors = []
 
-    def append_ip(self, ip_address):
-
-        # We need to split the ip_address at "/" to remove the CIDR.
-        raw_ip = str(ip_address).split("/")[0]
-        # Making sure, this is still a valid IP address.
-        parsed_ip = ipaddress.ip_address(raw_ip)
-
-        self.ips.append(str(parsed_ip))
+    def append_neighbor(self, ip_address, own_ip):
+        self.neighbors.append({ "peer": str(ip_address).split("/")[0], "local_address": str(own_ip).split("/")[0] })
 
     def get_template_params(self):
         ip_suffix = ""
@@ -121,10 +116,10 @@ class BGPDeviceGroup:
             "family": {},
             "neighbors": list(
                 map(
-                    lambda ip: {
-                        "peer": ip
+                    lambda neighbor: {
+                        "peer": neighbor['peer']
                     },
-                    self.ips
+                    self.neighbors
                 )
             ),
         }
@@ -146,3 +141,46 @@ class BGPDeviceGroup:
             junos_elem["authentication_key"] = juniper_encrypt(self.authentication_key, 'm')
 
         return junos_elem
+
+    def to_rtbrick(self):
+        # name contains an ip version suffix every time.
+        shorted_name = self.name
+        if len(self.name) > 32:
+            as_len = len(str(self.asn))
+            cap = 29 - as_len - 1
+            shorted_name = f'{self.name[0:-3][:cap]}_{str(self.asn)}{self.name[-3:]}'
+
+        rtbrick_elem = {
+            "name": shorted_name,
+            "peer_as": self.asn,
+            "type": "external",
+            "family": {},
+            "neighbors": self.neighbors
+        }
+
+        # TODO
+        # if self.bfd_infos:
+        #     rtbrick_elem['bfd'] = {
+        #         "min_interval": self.bfd_infos['min_interval'],
+        #         "multiplier": self.bfd_infos['multiplier'],
+        #     }
+
+        family_name = None
+        match self.ip_version:
+            case 4:
+                family_name = "ipv4_unicast"
+            case 6:
+                family_name = "ipv6_unicast"
+
+        rtbrick_elem["family"][family_name] = {}
+        rtbrick_elem["family"][family_name]["policy"] = {
+            "export": self.get_export_policies(),
+            "import": self.get_import_policies(),
+        }
+        if self.policy_type != "transit":
+            rtbrick_elem["family"][family_name]["max_prefixes"] = self.max_prefixes
+
+        if self.authentication_key:
+            rtbrick_elem["authentication_key"] = self.authentication_key
+
+        return rtbrick_elem

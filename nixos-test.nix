@@ -12,7 +12,7 @@
         abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
       '';
     };
-    environment.systemPackages = with pkgs; [ wanda wandaTestEnv bgpq4 ];
+    environment.systemPackages = with pkgs; [ wanda wandaTestEnv ];
   };
 
   testScript = { nodes }: let

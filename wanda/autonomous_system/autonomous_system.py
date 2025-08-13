@@ -28,8 +28,6 @@ class AutonomousSystem:
                 if len(match_result) != 0:
                     return_elements.append(match_result[0])
 
-        # Fall back to ASN if no AS-Set is found
-        if not return_elements:
-            return_elements.append(f"AS{self.asn}")
+        # Note: If there is no IRR names, we fall back to AS1234, but we do this later in the code.
 
         return return_elements
