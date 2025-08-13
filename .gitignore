@@ -7,3 +7,4 @@ venv*
 
 machines/*
 wanda.yml
+generated_vars/*

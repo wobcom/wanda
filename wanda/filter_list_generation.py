@@ -3,6 +3,7 @@ import platform
 from collections import defaultdict
 from multiprocessing.pool import Pool
 import json
+import yaml
 
 from wanda.as_filter.as_filter import ASFilter
 from wanda.autonomous_system.autonomous_system import AutonomousSystem
@@ -167,9 +168,21 @@ def main_customer_filter_lists(
             if asn in filter_lists:
                 config_parts[f"AS{asn}"] = filter_lists[asn]
 
-        path = f"./machines/{router_hostname.split(".")[0]}"
-        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
-        with open('./machines/' + router_hostname.split(".")[0] + '/generated-wanda-filters.json', 'w') as json_file:
-            json.dump(config_parts, json_file, indent=2)
+        short_router_hostname = router_hostname.split(".")[0]
+
+        match wanda_configuration.get('mode', 'junos'):
+            case 'junos':
+                destination_path = f"./generated_vars/"
+                pathlib.Path(destination_path).mkdir(parents=True, exist_ok=True)
+                destination_file = f"{destination_path}/filter_groups-{router_hostname}.yml"
+                with open(destination_file, 'w') as yaml_file:
+                    dump = yaml.dump(config_parts, default_flow_style=False)
+                    yaml_file.write(dump)
+            case 'rtbrick':
+                destination_path = f"./machines/{short_router_hostname}"
+                pathlib.Path(destination_path).mkdir(parents=True, exist_ok=True)
+                destination_file = f"{destination_path}/generated-wanda-filters.json"
+                with open(destination_file, 'w') as json_file:
+                    json.dump(config_parts, json_file, indent=2)
 
     return 0

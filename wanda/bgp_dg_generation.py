@@ -1,6 +1,7 @@
 import ipaddress
 import os.path
 import pathlib
+import re
 import sys
 from multiprocessing import Pool
 
@@ -14,14 +15,17 @@ from wanda.peeringmanager_helpers import get_config_name_from_as, get_bgp_infos_
 l = Logger("bgp_dg_generation.py")
 
 
-def check_for_consistency(bgp_device_groups, filter_groups_file_content):
+def check_for_consistency(bgp_device_groups, filter_groups):
     for bgp_device_group in bgp_device_groups:
         dynamic_filter_policies = bgp_device_group.get_dynamic_filter_policies()
         for dfp in dynamic_filter_policies:
-            exists_in_file = dfp in filter_groups_file_content
-            if not exists_in_file:
+            regex_res = re.match(r'POLICY_(AS\d+)_V\d', dfp)
+
+            as_name = regex_res.group(1)
+            if as_name not in filter_groups:
                 return False
     return True
+
 
 def enrich_routing_policies(group_policies, routing_policies):
     enriched_policies = []
@@ -115,6 +119,7 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
               bgp_device_groups.append(bdg)
 
     return bgp_device_groups
+
 
 
 def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing_policies):
@@ -220,6 +225,16 @@ def write_junos(router, e_routers, bgp_device_groups):
 
     yaml.emitter.Emitter.process_tag = noop
     pathlib.Path("./generated_vars").mkdir(parents=True, exist_ok=True)
+
+    # wanda might have been called without the filter generation portion.
+    # So, we load the existing file here and check, if everything is consistent. If not, we abort before changing anything.
+    with open(f'./generated_vars/filter_groups-{router['hostname']}.yml', 'r') as yml_filter_file:
+        filter_content = yaml.safe_load(yml_filter_file)
+        is_consistent = check_for_consistency(bgp_device_groups, filter_content)
+        if not is_consistent:
+            l.error(f"Inconsistency within filter groups for {router['hostname']}, need to regenerate filter groups")
+            sys.exit(42)
+
     with open('./generated_vars/bgp_device_groups-' + router['hostname'] + '.yml', 'w') as yaml_file:
         yaml.dump(e, yaml_file, default_flow_style=False)
         e_routers.update()
@@ -234,7 +249,7 @@ def write_rtbrick(router, e_routers, bgp_device_groups):
                 "protocols": {
                     "bgp": {
                         "groups": {bdg.pop('name'): bdg for index, bdg in
-                                               enumerate(rtbrick_bgp_device_groups)}
+                                   enumerate(rtbrick_bgp_device_groups)}
                     }
                 }
             }
@@ -243,6 +258,16 @@ def write_rtbrick(router, e_routers, bgp_device_groups):
 
     path = f"./machines/{router['name'].lower()}"
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+
+    # wanda might have been called without the filter generation portion.
+    # So, we load the existing file here and check, if everything is consistent. If not, we abort before changing anything.
+    with open(path + '/generated-wanda-filters.json', 'r') as json_filter_file:
+        filter_content = json.load(json_filter_file)
+        is_consistent = check_for_consistency(bgp_device_groups, filter_content)
+        if not is_consistent:
+            l.error(f"Inconsistency within filter groups for {router['hostname']}, need to regenerate filter groups")
+            sys.exit(42)
+
     with open(path + '/generated-wanda.json', 'w') as json_file:
         json.dump(e, json_file, indent=4)
         e_routers.update()
@@ -289,7 +314,12 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, wanda_co
 
     config_hosts = wanda_configuration.get('devices', [])
 
-    enabled_routers = list(filter(lambda r: ((not hosts) or (r['hostname'] in hosts)) and ((not config_hosts) or (r['hostname'] in config_hosts)), routers))
+    enabled_routers = list(
+        filter (
+            lambda r: ((not hosts) or (r['hostname'] in hosts)) and ((not config_hosts) or (r['hostname'] in config_hosts)),
+            routers
+        )
+    )
     e_routers = enlighten_manager.counter(total=len(enabled_routers), desc='Generating Configurations', unit='Router')
 
     for router in enabled_routers:
@@ -299,17 +329,6 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, wanda_co
             l.info(f"Skipping {router['hostname']}, because there is no 'automated' tag. ")
             continue
 
-        if wanda_mode == "junos":
-            filter_groups_file_path = './generated_vars/filter_groups-' + router['hostname'] + '.tmpl'
-            file_exists = os.path.exists(filter_groups_file_path)
-
-            if not file_exists:
-                l.error(f"Required filter_groups file for {router['hostname']} does not exist.")
-                continue
-
-            filter_groups_file = open(filter_groups_file_path, 'r')
-            filter_groups_file_content = filter_groups_file.read()
-
         router_connections = list(filter(lambda c: c['router'] and c['router']['id'] == router['id'], connections))
 
         bgp_device_groups = build_bgp_device_groups_for_ix_peerings(ix_peerings, router_connections, as_list,
@@ -317,17 +336,6 @@ def main_bgp(enlighten_manager, sync_manager, peering_manager_instance, wanda_co
 
         y = build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing_policies)
         bgp_device_groups.extend(y)
-
-        if wanda_mode == "junos":
-            # Consistency check for filter groups
-            # We generate filter groups beforehand and need to check if every request filter group
-            # is also correctly templated. If not, the filter group configuration is broken
-            # or the generated data is too old.
-
-            is_consistent = check_for_consistency(bgp_device_groups, filter_groups_file_content)
-            if not is_consistent:
-                l.error(f"Inconsistency within filter groups for {router['hostname']}, need to regenerate filter groups")
-                sys.exit(42)
 
         match wanda_configuration.get('mode', 'junos'):
             case 'junos':
