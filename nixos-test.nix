@@ -24,7 +24,7 @@ testers.nixosTest {
     machine.succeed("peering-manager-manage createsuperuser --no-input --username admin --email admin@example.com")
 
     api_token = machine.succeed(
-        "peering-manager-manage shell -c \"from users.models import Token; from users.models import User; u=User.objects.get(email='admin@example.com'); t = Token.objects.create(user=u); print(t.key)\""
+        "peering-manager-manage shell -c \"from users.models import Token; from users.models import User; u=User.objects.get(email='admin@example.com'); t = Token.objects.create(user=u); print(t.key)\" | grep --only-matching \"[0-9a-f]*$\""
     ).strip()
 
     machine.succeed("PEERINGMANAGER_API_TOKEN=%s PEERINGMANAGER_URL=${peeringmanagerUrl} pytest -m integration /etc/wanda-src" % (api_token))
