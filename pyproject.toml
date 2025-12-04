@@ -9,8 +9,8 @@ wanda = "wanda:__main__.main"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-enlighten = "~1.10.2"
-requests = "~2.26.0"
+enlighten = "^1.10.2"
+requests = "^2.26.0"
 PyYAML = ">5.1"
 pytest-mock = "^3.10.0"
 

@@ -55,7 +55,7 @@ class PeeringManagerClient:
 
     def get_routers(self):
         if not self.cached_routers:
-            self.cached_routers = self.make_request_list('/api/peering/routers/')
+            self.cached_routers = self.make_request_list('/api/devices/routers/')
         return self.cached_routers
 
     def get_connections(self):
