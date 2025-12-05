@@ -21,16 +21,16 @@ class ASFilter:
         v4_set = set()
         v6_set = set()
 
-        irr_names = self.autos.get_irr_names()
+        irr_tuples = self.autos.get_irr_names()
 
-        if not irr_names:
+        if not irr_tuples:
             result_entries_v4, result_entries_v6 = self.irrd_client.generate_prefix_lists_for_asn(self.autos.asn)
 
             v4_set.update(result_entries_v4)
             v6_set.update(result_entries_v6)
         else:
-            for irr_name in irr_names:
-                result_entries_v4, result_entries_v6 = self.irrd_client.generate_prefix_lists(irr_name)
+            for irr_tuple in irr_tuples:
+                result_entries_v4, result_entries_v6 = self.irrd_client.generate_prefix_lists(irr_tuple)
 
                 v4_set.update(result_entries_v4)
                 v6_set.update(result_entries_v6)
@@ -42,11 +42,11 @@ class ASFilter:
 
     def get_filter_lists(self, enable_extended_filters=False):
 
-        irr_names = self.autos.get_irr_names()
+        irr_tuples = self.autos.get_irr_names()
         filters = {}
 
-        if irr_names:
-            filters['origin_asns'] = sorted(self.irrd_client.generate_input_aspath_access_list(self.autos.asn, irr_names[0]))
+        if irr_tuples:
+            filters['origin_asns'] = sorted(self.irrd_client.generate_input_aspath_access_list(self.autos.asn, irr_tuples[0]))
         else:
             filters['origin_asns'] = [self.autos.asn]
 

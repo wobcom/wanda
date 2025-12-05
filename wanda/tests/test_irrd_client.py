@@ -162,13 +162,13 @@ class TestIRRDClient:
         return irrd_c
 
     @pytest.mark.parametrize(
-        "irr_name,prefix_num,prefix_list_v4,prefix_list_v6",
+        "irr_tuple,prefix_num,prefix_list_v4,prefix_list_v6",
         [
-            ("AS-WOBCOM", (4, 4), WOBCOM_PREFIX_LIST_MOCK_V4, WOBCOM_PREFIX_LIST_MOCK_V6),
-            ("AS208395", (1, 1), WDZ_PREFIX_LIST_MOCK_V4, WDZ_PREFIX_LIST_MOCK_V6),
+            ((None, "AS-WOBCOM"), (4, 4), WOBCOM_PREFIX_LIST_MOCK_V4, WOBCOM_PREFIX_LIST_MOCK_V6),
+            ((None, "AS208395"), (1, 1), WDZ_PREFIX_LIST_MOCK_V4, WDZ_PREFIX_LIST_MOCK_V6),
         ]
     )
-    def test_prefix_lists(self, mocker, irrd_instance, irr_name, prefix_num, prefix_list_v4, prefix_list_v6):
+    def test_prefix_lists(self, mocker, irrd_instance, irr_tuple, prefix_num, prefix_list_v4, prefix_list_v6):
         (prefix_num_4, prefix_num_6) = prefix_num
 
         mocker.patch(
@@ -187,7 +187,7 @@ class TestIRRDClient:
             }
         )
 
-        prefix_list_4, prefix_list_6 = irrd_instance.generate_prefix_lists(irr_name)
+        prefix_list_4, prefix_list_6 = irrd_instance.generate_prefix_lists(irr_tuple)
         assert len(prefix_list_4) == prefix_num_4
         assert len(prefix_list_6) == prefix_num_6
 
@@ -196,13 +196,13 @@ class TestIRRDClient:
         assert all(ipaddress.IPv6Network(ip, strict=False) for ip in prefix_list_6)
 
     @pytest.mark.parametrize(
-        "irr_name,asn,as_path_output",
+        "irr_tuple,asn,as_path_output",
         [
-            ("AS-WOBCOM", 9136, AS_PATH_WOBCOM),
-            ("AS208395", 208395, AS_PATH_WDZ),
+            ((None, "AS-WOBCOM"), 9136, AS_PATH_WOBCOM),
+            ((None, "AS208395"), 208395, AS_PATH_WDZ),
         ]
     )
-    def test_input_as_path_access_list(self, mocker, irrd_instance, irr_name, asn, as_path_output):
+    def test_input_as_path_access_list(self, mocker, irrd_instance, irr_tuple, asn, as_path_output):
         mocker.patch(
             'wanda.irrd_client.IRRDClient.fetch_graphql_data',
             return_value={
@@ -214,7 +214,7 @@ class TestIRRDClient:
             }
         )
 
-        access_list = irrd_instance.generate_input_aspath_access_list(asn, irr_name)
+        access_list = irrd_instance.generate_input_aspath_access_list(asn, irr_tuple)
 
         assert asn in access_list
         assert all([isinstance(x, int) for x in access_list])
