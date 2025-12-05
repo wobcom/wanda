@@ -41,11 +41,11 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
     for connection in connections:
       for ix in ix_peerings:
 
-          if ix['status']['value'] != 'enabled':
-              l.info(f'Skipping Internet Exchange Peering Session with id={ix["id"]}, because is not enabled.')
+          if ix['ixp_connection']['id'] is not connection['id']:
               continue
 
-          if ix['ixp_connection']['id'] is not connection['id']:
+          if ix['status']['value'] != 'enabled':
+              l.info(f'Skipping Internet Exchange Peering Session with id={ix["id"]}, because is not enabled.')
               continue
 
           if connection['id'] == 22:
@@ -126,15 +126,15 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing
     bgp_device_groups = []
     for dp in direct_peerings:
 
-        if dp['status']['value'] != 'enabled':
-            l.info(f'Skipping Direct Peering Session with id={dp["id"]}, because is not enabled.')
-            continue
-
         if not dp['router']:
             l.info(f'Skipping Direct Peering Session with id={dp["id"]}, because there is no router attached.')
             continue
 
         if dp['router']['id'] is not router['id']:
+            continue
+
+        if dp['status']['value'] != 'enabled':
+            l.info(f'Skipping Direct Peering Session with id={dp["id"]}, because is not enabled.')
             continue
 
         asn = dp['autonomous_system']['asn']
