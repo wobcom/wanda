@@ -25,6 +25,10 @@ class IRRDClient:
         """
         result = self.fetch_graphql_data(body)
 
+        if len(result['recursiveSetMembers']) == 0:
+            l.warning(f"AS-SET {irr_name} (AS {asn}) did not resolve, probably invalid AS-SET..")
+            return []
+
         # return unique members that are ASNs
         members = set(result["recursiveSetMembers"][0]["members"])
         return [int(i[2:]) for i in members if re.match(r"^AS\d+$", i)]
@@ -47,5 +51,9 @@ class IRRDClient:
           }}
         """
         result = self.fetch_graphql_data(body)
+        
+        if len(result['v4']) == 0 and len(result['v6']) == 0:
+          l.warning(f"AS-SET {irr_name} did not resolve, probably invalid AS-SET..")
+          return set(), set()
 
         return set(result["v4"][0]["prefixes"]), set(result["v6"][0]["prefixes"])

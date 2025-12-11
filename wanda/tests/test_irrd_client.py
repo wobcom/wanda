@@ -5,6 +5,15 @@ import pytest
 
 from wanda.irrd_client import IRRDClient
 
+FAKE_PREFIX_LIST_MOCK_V4 = [
+    "198.51.101.0/24"
+]
+
+FAKE_PREFIX_LIST_MOCK_V6 = [
+    "2001:db8::23/32"
+]
+
+
 WDZ_PREFIX_LIST_MOCK_V4 = [
     "198.51.100.0/24"
 ]
@@ -147,6 +156,9 @@ AS_PATH_WDZ = [
     "AS208395"
 ]
 
+AS_PATH_FAKE = [
+    "AS1234"
+]
 
 # We mock each response and threat this as a unit test since bgpq4 is considered stable.
 # We might test an additional integration test later on.
@@ -164,6 +176,7 @@ class TestIRRDClient:
     @pytest.mark.parametrize(
         "irr_name,prefix_num,prefix_list_v4,prefix_list_v6",
         [
+            ("RIPE::AS1234:AS-FAKE", (1, 1), FAKE_PREFIX_LIST_MOCK_V4, FAKE_PREFIX_LIST_MOCK_V6),
             ("AS-WOBCOM", (4, 4), WOBCOM_PREFIX_LIST_MOCK_V4, WOBCOM_PREFIX_LIST_MOCK_V6),
             ("AS208395", (1, 1), WDZ_PREFIX_LIST_MOCK_V4, WDZ_PREFIX_LIST_MOCK_V6),
         ]
@@ -198,6 +211,7 @@ class TestIRRDClient:
     @pytest.mark.parametrize(
         "irr_name,asn,as_path_output",
         [
+            ("RIPE::AS1234:AS-FAKE", 1234, AS_PATH_FAKE),
             ("AS-WOBCOM", 9136, AS_PATH_WOBCOM),
             ("AS208395", 208395, AS_PATH_WDZ),
         ]
