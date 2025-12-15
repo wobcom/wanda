@@ -6,6 +6,10 @@ from wanda.logger import Logger
 
 l = Logger("irrd_client.py")
 
+class InvalidASSETException(Exception):
+    def __init__(self, as_set, asn=None):
+        super().__init__(f"AS-SET {as_set} did not resolve, probably invalid AS-SET..")
+
 
 class IRRDClient:
 
@@ -17,7 +21,7 @@ class IRRDClient:
         response.raise_for_status()
         return response.json()["data"]
 
-    def generate_input_aspath_access_list(self, asn, irr_name):
+    def generate_input_aspath_access_list(self, irr_name):
         body = f"""
           {{
               recursiveSetMembers(setNames: ["{irr_name}"], depth: 8) {{ members }}
@@ -26,8 +30,7 @@ class IRRDClient:
         result = self.fetch_graphql_data(body)
 
         if len(result['recursiveSetMembers']) == 0:
-            l.warning(f"AS-SET {irr_name} (AS {asn}) did not resolve, probably invalid AS-SET..")
-            return []
+            raise InvalidASSETException(irr_name)
 
         # return unique members that are ASNs
         members = set(result["recursiveSetMembers"][0]["members"])
@@ -53,7 +56,6 @@ class IRRDClient:
         result = self.fetch_graphql_data(body)
         
         if len(result['v4']) == 0 and len(result['v6']) == 0:
-          l.warning(f"AS-SET {irr_name} did not resolve, probably invalid AS-SET..")
-          return set(), set()
+            raise InvalidASSETException(irr_name)
 
         return set(result["v4"][0]["prefixes"]), set(result["v6"][0]["prefixes"])

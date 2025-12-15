@@ -228,7 +228,7 @@ class TestIRRDClient:
             }
         )
 
-        access_list = irrd_instance.generate_input_aspath_access_list(asn, irr_name)
+        access_list = irrd_instance.generate_input_aspath_access_list(irr_name)
 
         assert asn in access_list
         assert all([isinstance(x, int) for x in access_list])
