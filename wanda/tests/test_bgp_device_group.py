@@ -10,7 +10,7 @@ from wanda.bgp_device_group.bgp_device_group import BGPDeviceGroup
 def get_bgp_device_group_4(**kwargs):
     group = BGPDeviceGroup(
         name="TEST",
-        asn=1234,
+        asn=64496,
         ip_version=4,
         max_prefixes=69,
         **kwargs
@@ -31,7 +31,7 @@ def get_bgp_device_group_4(**kwargs):
 def get_bgp_device_group_6(**kwargs):
     group = BGPDeviceGroup(
         name="TEST",
-        asn=1234,
+        asn=64496,
         ip_version=6,
         max_prefixes=69,
         **kwargs
@@ -63,7 +63,7 @@ class TestBGPDeviceGroup:
         junos_closure = bdg.to_junos()
 
         assert junos_closure['name'] is "TEST"
-        assert junos_closure['peer_as'] is 1234
+        assert junos_closure['peer_as'] is 64496
         assert isinstance(junos_closure['export'], list)
         assert isinstance(junos_closure['import'], list)
         assert junos_closure["family"][f"ipv{ip_version}_unicast"]["max_prefixes"] == 69
@@ -141,34 +141,34 @@ class TestBGPDeviceGroup:
         [
             (get_bgp_device_group_4(),
              ['FILTER_BOGONS_V4', 'FILTER_OWN_V4', 'BOGON_ASN_FILTERING', 'SCRUB_COMMUNITIES', 'TIER1_FILTERING',
-              'RPKI_FILTERING', 'POLICY_AS1234_V4', 'PEERING_IMPORT_V4']),
+              'RPKI_FILTERING', 'POLICY_AS64496_V4', 'PEERING_IMPORT_V4']),
             (get_bgp_device_group_4(is_route_server=True),
              ['FILTER_BOGONS_V4', 'FILTER_OWN_V4', 'BOGON_ASN_FILTERING', 'SCRUB_COMMUNITIES', 'TIER1_FILTERING',
               'RPKI_FILTERING', 'PEERING_IMPORT_V4']),
             (get_bgp_device_group_4(policy_type="customer"),
              ['FILTER_BOGONS_V4', 'FILTER_OWN_V4', 'BOGON_ASN_FILTERING', 'TIER1_FILTERING', 'RPKI_FILTERING',
-              'POLICY_AS1234_V4', 'CUSTOMER_IMPORT_V4']),
+              'POLICY_AS64496_V4', 'CUSTOMER_IMPORT_V4']),
             (get_bgp_device_group_4(policy_type="transit"),
              ['FILTER_BOGONS_V4', 'FILTER_OWN_V4', 'BOGON_ASN_FILTERING', 'SCRUB_COMMUNITIES', 'RPKI_FILTERING',
               'UPSTREAM_IMPORT_V4']),
             (get_bgp_device_group_4(policy_type="pni"),
              ['FILTER_BOGONS_V4', 'FILTER_OWN_V4', 'BOGON_ASN_FILTERING', 'SCRUB_COMMUNITIES', 'TIER1_FILTERING',
-              'RPKI_FILTERING', 'POLICY_AS1234_V4', 'PNI_IMPORT_V4']),
+              'RPKI_FILTERING', 'POLICY_AS64496_V4', 'PNI_IMPORT_V4']),
             (get_bgp_device_group_6(),
              ['FILTER_BOGONS_V6', 'FILTER_OWN_V6', 'BOGON_ASN_FILTERING', 'SCRUB_COMMUNITIES', 'TIER1_FILTERING',
-              'RPKI_FILTERING', 'POLICY_AS1234_V6', 'PEERING_IMPORT_V6']),
+              'RPKI_FILTERING', 'POLICY_AS64496_V6', 'PEERING_IMPORT_V6']),
             (get_bgp_device_group_6(is_route_server=True),
              ['FILTER_BOGONS_V6', 'FILTER_OWN_V6', 'BOGON_ASN_FILTERING', 'SCRUB_COMMUNITIES', 'TIER1_FILTERING',
               'RPKI_FILTERING', 'PEERING_IMPORT_V6']),
             (get_bgp_device_group_6(policy_type="customer"),
              ['FILTER_BOGONS_V6', 'FILTER_OWN_V6', 'BOGON_ASN_FILTERING', 'TIER1_FILTERING', 'RPKI_FILTERING',
-              'POLICY_AS1234_V6', 'CUSTOMER_IMPORT_V6']),
+              'POLICY_AS64496_V6', 'CUSTOMER_IMPORT_V6']),
             (get_bgp_device_group_6(policy_type="transit"),
              ['FILTER_BOGONS_V6', 'FILTER_OWN_V6', 'BOGON_ASN_FILTERING', 'SCRUB_COMMUNITIES', 'RPKI_FILTERING',
               'UPSTREAM_IMPORT_V6']),
             (get_bgp_device_group_6(policy_type="pni"),
              ['FILTER_BOGONS_V6', 'FILTER_OWN_V6', 'BOGON_ASN_FILTERING', 'SCRUB_COMMUNITIES', 'TIER1_FILTERING',
-              'RPKI_FILTERING', 'POLICY_AS1234_V6', 'PNI_IMPORT_V6']),
+              'RPKI_FILTERING', 'POLICY_AS64496_V6', 'PNI_IMPORT_V6']),
         ]
     )
     def test_basic_import_policies(self, bdg, expected_policies):
