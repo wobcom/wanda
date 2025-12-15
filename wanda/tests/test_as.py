@@ -12,7 +12,7 @@ class TestAutonomousSystem:
             (9136, "WOBCOM", "AS-WOBCOM", ["AS-WOBCOM"]),
             (208395, "WDZ", "", []),
             (1299, "Twelve99", "RIPE::AS-TELIANET RIPE::AS-TELIANET-V6", ["AS-TELIANET", "AS-TELIANET-V6"]),
-            (1234, "FAKE", "RIPE::AS1234:AS-FAKE RIPE::AS1234:AS-FAKE-V6", ["AS1234:AS-FAKE", "AS1234:AS-FAKE-V6"])
+            (64496, "FAKE", "RIPE::AS64496:AS-FAKE RIPE::AS64496:AS-FAKE-V6", ["AS64496:AS-FAKE", "AS64496:AS-FAKE-V6"])
         ]
     )
     def test_irr_name(self, asn, name, irr_names, expected_irr_names):
