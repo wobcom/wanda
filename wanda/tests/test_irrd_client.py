@@ -3,7 +3,7 @@ from subprocess import CalledProcessError
 
 import pytest
 
-from wanda.irrd_client import IRRDClient
+from wanda.irrd_client import IRRDClient, InvalidASSETException
 
 FAKE_PREFIX_LIST_MOCK_V4 = [
     "198.51.100.0/25"
@@ -209,6 +209,24 @@ class TestIRRDClient:
         assert all(ipaddress.IPv6Network(ip, strict=False) for ip in prefix_list_6)
 
     @pytest.mark.parametrize(
+        "irr_name,",
+        [
+            ("RIPE::AS64496:AS-FAKE",),
+        ]
+    )
+    def test_invalid_prefix_lists(self, mocker, irrd_instance, irr_name, ):
+        mocker.patch(
+            'wanda.irrd_client.IRRDClient.fetch_graphql_data',
+            return_value={
+                "v4": [],
+                "v6": []
+            }
+        )
+
+        with pytest.raises(InvalidASSETException):
+            irrd_instance.generate_prefix_lists(irr_name)
+
+    @pytest.mark.parametrize(
         "irr_name,asn,as_path_output",
         [
             ("RIPE::AS64496:AS-FAKE", 64496, AS_PATH_FAKE),
@@ -232,6 +250,23 @@ class TestIRRDClient:
 
         assert asn in access_list
         assert all([isinstance(x, int) for x in access_list])
+
+    @pytest.mark.parametrize(
+        "irr_name",
+        [
+            ("RIPE::AS64497:AS-FAKE",),
+        ]
+    )
+    def test_input_invalid_as_path_access_list(self, mocker, irrd_instance, irr_name):
+        mocker.patch(
+            'wanda.irrd_client.IRRDClient.fetch_graphql_data',
+            return_value={
+                "recursiveSetMembers": [],
+            }
+        )
+
+        with pytest.raises(InvalidASSETException):
+            irrd_instance.generate_input_aspath_access_list(irr_name)
 
 
     def test_invalid_bgpq4_prefix_lists(self, irrd_instance):
