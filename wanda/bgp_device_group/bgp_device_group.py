@@ -154,6 +154,7 @@ class BGPDeviceGroup:
             "name": shorted_name,
             "peer_as": self.asn,
             "type": "external",
+            "remove_private": True,
             "family": {},
             "neighbors": self.neighbors
         }
@@ -172,7 +173,7 @@ class BGPDeviceGroup:
             case 6:
                 family_name = "ipv6_unicast"
 
-        rtbrick_elem["family"][family_name] = { "remove_private": True }
+        rtbrick_elem["family"][family_name] = {}
         rtbrick_elem["family"][family_name]["policy"] = {
             "export": self.get_export_policies(),
             "import": self.get_import_policies(),
