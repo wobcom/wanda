@@ -94,10 +94,13 @@ def build_bgp_device_groups_for_ix_peerings(ix_peerings, connections, as_list, r
 
               tag_list = map(lambda x: x['name'], ix['tags'])
               is_customer = "customer" in tag_list
+              is_aggregated_customer = "aggregated-customer" in tag_list
 
               policy_type = "peering"
               if is_customer:
                   policy_type = "customer"
+              if is_aggregated_customer:
+                  policy_type = "aggregated-customer"
 
               bfd_infos = get_bgp_infos_from_tags("IX", ix['id'], ix['tags'])
 
@@ -178,6 +181,9 @@ def build_bgp_device_groups_for_direct_peerings(direct_peerings, router, routing
             elif dp['relationship']['slug'] == "customer":
                 prefix = "CUSTOMER"
                 policy_type = "customer"
+            elif dp['relationship']['slug'] == "aggregated-customer":
+                prefix = "CUSTOMER"
+                policy_type = "aggregated-customer"
             else:
                 print(dp)
                 raise Exception(f"Invalid relationship detected in direct peering {dp['id']}")

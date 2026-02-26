@@ -36,6 +36,9 @@ class BGPDeviceGroup:
 
         if self.policy_type == "customer":
             policy_prefix = "CUSTOMER"
+            
+        if self.policy_type == "aggregated-customer":
+            policy_prefix = "CUSTOMER"
 
         if self.policy_type == "transit":
             policy_prefix = "UPSTREAM"
@@ -60,13 +63,18 @@ class BGPDeviceGroup:
 
         tier1_filter = []
         scrub_communities = []
+        filter_own = []
         import_filter = self.get_dynamic_filter_policies()
 
         if self.policy_type != "transit":
             tier1_filter.append("TIER1_FILTERING")
 
-        if self.policy_type != "customer":
+        if self.policy_type != "customer" and self.policy_type != "aggregated-customer":
             scrub_communities.append("SCRUB_COMMUNITIES")
+
+        if self.policy_type != "aggregated-customer":
+            filter_own.append(f"FILTER_OWN_{ip_suffix}")
+            
 
         pre_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] >= 1000]
         custom_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] < 1000]
@@ -74,7 +82,7 @@ class BGPDeviceGroup:
         return [
             *pre_policies,
             f"FILTER_BOGONS_{ip_suffix}",
-            f"FILTER_OWN_{ip_suffix}",
+            *filter_own,
             f"BOGON_ASN_FILTERING",
             *scrub_communities,
             *tier1_filter,
