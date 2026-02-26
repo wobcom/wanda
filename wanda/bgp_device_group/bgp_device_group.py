@@ -82,8 +82,11 @@ class BGPDeviceGroup:
             filter_bogons.append(f"FILTER_BOGONS_{ip_suffix}")
         else:
             filter_bogon_asns.append(f"BOGON_ASN_FILTERING_ALLOW_PRIVATE")
-            filter_bogons.append(f"FILTER_BOGONS_ALLOW_LONGER_{ip_suffix}")
-            
+            if ip_suffix == "V4":
+                filter_bogons.append(f"FILTER_BOGONS_ALLOW_LONGER_{ip_suffix}")
+            else:
+                filter_bogons.append(f"FILTER_BOGONS_{ip_suffix}")
+                
 
         pre_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] >= 1000]
         custom_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] < 1000]
