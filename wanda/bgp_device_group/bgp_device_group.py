@@ -64,6 +64,8 @@ class BGPDeviceGroup:
         tier1_filter = []
         scrub_communities = []
         filter_own = []
+        filter_bogon_asns = []
+        rpki_filtering = []
         import_filter = self.get_dynamic_filter_policies()
 
         if self.policy_type != "transit":
@@ -74,6 +76,10 @@ class BGPDeviceGroup:
 
         if self.policy_type != "aggregated-customer":
             filter_own.append(f"FILTER_OWN_{ip_suffix}")
+            filter_bogon_asns.append(f"BOGON_ASN_FILTERING")
+            rpki_filtering.append(f"RPKI_FILTERING")
+        else:
+            filter_bogon_asns.append(f"BOGON_ASN_FILTERING_ALLOW_DEFAULT")
             
 
         pre_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] >= 1000]
@@ -83,10 +89,10 @@ class BGPDeviceGroup:
             *pre_policies,
             f"FILTER_BOGONS_{ip_suffix}",
             *filter_own,
-            f"BOGON_ASN_FILTERING",
+            *filter_bogon_asns,
             *scrub_communities,
             *tier1_filter,
-            "RPKI_FILTERING",
+            *rpki_filtering,
             *custom_policies,
             *import_filter,
             f"{policy_prefix}_IMPORT_{ip_suffix}",
