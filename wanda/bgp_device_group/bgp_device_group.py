@@ -79,7 +79,7 @@ class BGPDeviceGroup:
             filter_bogon_asns.append(f"BOGON_ASN_FILTERING")
             rpki_filtering.append(f"RPKI_FILTERING")
         else:
-            filter_bogon_asns.append(f"BOGON_ASN_FILTERING_ALLOW_DEFAULT")
+            filter_bogon_asns.append(f"BOGON_ASN_FILTERING_ALLOW_PRIVATE")
             
 
         pre_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] >= 1000]
