@@ -66,6 +66,7 @@ class BGPDeviceGroup:
         filter_own = []
         filter_bogon_asns = []
         rpki_filtering = []
+        filter_bogons = []
         import_filter = self.get_dynamic_filter_policies()
 
         if self.policy_type != "transit":
@@ -78,8 +79,10 @@ class BGPDeviceGroup:
             filter_own.append(f"FILTER_OWN_{ip_suffix}")
             filter_bogon_asns.append(f"BOGON_ASN_FILTERING")
             rpki_filtering.append(f"RPKI_FILTERING")
+            filter_bogons.append(f"FILTER_BOGONS_{ip_suffix}")
         else:
             filter_bogon_asns.append(f"BOGON_ASN_FILTERING_ALLOW_PRIVATE")
+            filter_bogons.append(f"FILTER_BOGONS_ALLOW_LONGER_{ip_suffix}")
             
 
         pre_policies = [policy['name'] for policy in self.import_routing_policies if policy['weight'] >= 1000]
@@ -87,7 +90,7 @@ class BGPDeviceGroup:
 
         return [
             *pre_policies,
-            f"FILTER_BOGONS_{ip_suffix}",
+            *filter_bogons,
             *filter_own,
             *filter_bogon_asns,
             *scrub_communities,
