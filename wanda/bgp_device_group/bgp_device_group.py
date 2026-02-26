@@ -38,7 +38,7 @@ class BGPDeviceGroup:
             policy_prefix = "CUSTOMER"
             
         if self.policy_type == "aggregated-customer":
-            policy_prefix = "CUSTOMER"
+            policy_prefix = "AGGREGATED_CUSTOMER"
 
         if self.policy_type == "transit":
             policy_prefix = "UPSTREAM"
