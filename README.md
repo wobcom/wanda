@@ -205,4 +205,8 @@ Sadly Peering-Manager doesn't support custom fields. So we use a few tags to con
 
 See `LICENSE.md`
 
-This license does not apply to `wanda/junos_secret.py`, refer to the header of that file. 
+This license does not apply to `wanda/junos_secret.py`, refer to the header of that file.
+
+## Contact
+
+You can contact the team behind this project by emailing: wan@wobcom.de
