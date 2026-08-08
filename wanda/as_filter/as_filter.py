@@ -31,9 +31,13 @@ class ASFilter:
         else:
             for irr_name in irr_names:
                 result_entries_v4, result_entries_v6 = self.irrd_client.generate_prefix_lists(irr_name)
-
                 v4_set.update(result_entries_v4)
                 v6_set.update(result_entries_v6)
+
+        v4_set.update(self.autos.ipv4_prefixes)
+        v6_set.update(self.autos.ipv6_prefixes)
+        
+
 
         if len(v4_set) == 0 and len(v6_set) == 0 and self.is_customer:
             raise Exception(f"{self.autos} has neither IPv4, nor IPv6 filter lists. Since AS is our customer, we forbid this for security reasons.")

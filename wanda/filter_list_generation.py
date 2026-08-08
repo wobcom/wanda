@@ -122,14 +122,16 @@ def main_customer_filter_lists(
 
     filter_lists = sync_manager.dict()
 
-    prepared_asns = [
-        (
-            irrd_client,
-            AutonomousSystem(asn=ase['asn'], name=ase['name'], irr_as_set=ase['irr_as_set']),
-            extended_filtering_as,
-            filter_lists
-        ) for ase in as_list if ase['asn'] in enabled_asn
-    ]
+    prepared_asns = []
+    for ase in as_list:
+        if ase['asn'] in enabled_asn:
+            kwargs = {}
+            if ase["config_context"] and "ipv4_prefixes" in ase["config_context"]:
+                kwargs["ipv4_prefixes"] = ase["config_context"]["ipv4_prefixes"]
+            if ase["config_context"] and "ipv6_prefixes" in ase["config_context"]:
+                kwargs["ipv6_prefixes"] = ase["config_context"]["ipv6_prefixes"]
+            as_obj = AutonomousSystem(asn=ase['asn'], name=ase['name'], irr_as_set=ase['irr_as_set'],**kwargs)
+            prepared_asns.append((irrd_client,as_obj,extended_filtering_as,filter_lists))
 
     e_as = enlighten_manager.counter(total=len(prepared_asns), desc='Generating Filter Lists for ASes', unit='AS')
 

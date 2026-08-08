@@ -2,10 +2,12 @@ import re
 
 
 class AutonomousSystem:
-    def __init__(self, asn, name, irr_as_set):
+    def __init__(self, asn, name, irr_as_set,ipv4_prefixes = list() ,ipv6_prefixes = list()):
         self.asn = asn
         self.name = name
         self.irr_as_set = irr_as_set
+        self.ipv4_prefixes = ipv4_prefixes
+        self.ipv6_prefixes = ipv6_prefixes
 
     def __eq__(self, other):
         return self.asn == other.asn
