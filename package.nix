@@ -37,7 +37,7 @@ buildPythonApplication rec {
     pytest-mock
   ];
 
-  pytestFlagsArray = [ "-m" "unit" ];
+  pytestFlags = [ "-m" "unit" ];
 
   optional-dependencies = [
     pytest
